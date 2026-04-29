@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../repositories/meal_plan_repository.dart';
 import '../models/meal_plan.dart';
@@ -19,12 +20,33 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
   final List<String> _mealPeriods = ['breakfast', 'lunch', 'dinner'];
 
   Future<void> _generatePlan() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: CircularProgressIndicator(color: AppTheme.sage, strokeWidth: 2.5),
+          ),
+        ),
+      ),
+    );
     try {
       await ref.read(mealPlanRepositoryProvider).generatePlan();
       ref.invalidate(currentMealPlanProvider);
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Done!')),
+        );
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to generate plan: $e')));
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to generate plan: $e')),
+        );
       }
     }
   }
@@ -59,12 +81,41 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
             children: [
               _buildDaySelector(),
               const Divider(height: 1, color: AppTheme.divider),
-              Expanded(child: _buildDayContent(plan)),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) =>
+                      FadeTransition(opacity: animation, child: child),
+                  child: KeyedSubtree(
+                    key: ValueKey(_selectedDay),
+                    child: _buildDayContent(plan),
+                  ),
+                ),
+              ),
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.sage)),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppTheme.sage, strokeWidth: 2.5),
+        ),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(LucideIcons.alertCircle, size: 48, color: AppTheme.textCaption),
+              const SizedBox(height: 12),
+              Text(
+                'Something went wrong',
+                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: AppTheme.darkGreen),
+              ),
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: () => ref.invalidate(currentMealPlanProvider),
+                child: Text('Retry', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.sage)),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -76,6 +127,8 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const Icon(LucideIcons.calendarDays, size: 48, color: AppTheme.textCaption),
+            const SizedBox(height: 12),
             Text(
               'Your week is empty',
               style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: AppTheme.darkGreen),
@@ -110,7 +163,8 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
           final isSelected = _selectedDay == index;
           return GestureDetector(
             onTap: () => setState(() => _selectedDay = index),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               margin: const EdgeInsets.only(right: 24),
               alignment: Alignment.center,
               decoration: BoxDecoration(
@@ -179,67 +233,102 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
   }
 
   Widget _buildRecipeRow(MealSlot slot) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F0E4),
-              borderRadius: BorderRadius.circular(10),
+    return _PressableRow(
+      onTap: () => context.push('/recipes/${slot.recipe!.id}'),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F0E4),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: Icon(LucideIcons.utensils, size: 24, color: AppTheme.sage.withValues(alpha: 0.6)),
+              ),
             ),
-            child: Center(
-              child: Icon(LucideIcons.utensils, size: 24, color: AppTheme.sage.withOpacity(0.6)),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  slot.recipe!.name,
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.darkGreen,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(LucideIcons.clock, size: 13, color: AppTheme.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${slot.recipe!.totalTimeMin} mins',
-                      style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    slot.recipe!.name,
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.darkGreen,
                     ),
-                    const SizedBox(width: 10),
-                    Icon(LucideIcons.star, size: 13, color: AppTheme.textMuted),
-                    const SizedBox(width: 4),
-                    Text('4.0', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted)),
-                  ],
-                ),
-              ],
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(LucideIcons.clock, size: 13, color: AppTheme.textMuted),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${slot.recipe!.totalTimeMin} mins',
+                        style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+                      ),
+                      const SizedBox(width: 10),
+                      const Icon(LucideIcons.star, size: 13, color: AppTheme.textMuted),
+                      const SizedBox(width: 4),
+                      Text('4.0', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted)),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          Icon(LucideIcons.gripVertical, size: 18, color: AppTheme.textCaption),
-        ],
+            const Icon(LucideIcons.gripVertical, size: 18, color: AppTheme.textCaption),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptySlot() {
-    return DottedBorderBox(
-      child: Center(
-        child: Text(
-          '+ Add Meal',
-          style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textCaption),
+    return GestureDetector(
+      onTap: () => context.go('/recipes'),
+      child: DottedBorderBox(
+        child: Center(
+          child: Text(
+            '+ Add Meal',
+            style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textCaption),
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _PressableRow extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  const _PressableRow({required this.child, required this.onTap});
+
+  @override
+  State<_PressableRow> createState() => _PressableRowState();
+}
+
+class _PressableRowState extends State<_PressableRow> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) => setState(() => _pressed = false),
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: widget.child,
       ),
     );
   }
@@ -266,7 +355,7 @@ class _DashedBorderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Color(0xFFD1D5DB)
+      ..color = const Color(0xFFD1D5DB)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
@@ -293,4 +382,6 @@ class _DashedBorderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
+
 

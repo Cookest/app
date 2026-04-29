@@ -15,11 +15,11 @@ class ShoppingItem {
 
   factory ShoppingItem.fromJson(Map<String, dynamic> json) {
     return ShoppingItem(
-      id: json['id'],
-      name: json['name'],
-      quantity: (json['quantity'] as num).toDouble(),
-      unit: json['unit'],
-      isChecked: json['is_checked'] ?? false,
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      quantity: (json['quantity'] as num?)?.toDouble() ?? 1.0,
+      unit: json['unit']?.toString() ?? 'pcs',
+      isChecked: json['is_checked'] as bool? ?? false,
     );
   }
 }

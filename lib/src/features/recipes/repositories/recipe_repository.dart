@@ -24,7 +24,16 @@ class RecipeRepository {
       'per_page': 20,
     });
     
-    return (response.data['items'] as List).map((r) => Recipe.fromJson(r)).toList();
+    final data = response.data;
+    final List items;
+    if (data is List) {
+      items = data;
+    } else if (data is Map && data['items'] is List) {
+      items = data['items'] as List;
+    } else {
+      items = [];
+    }
+    return items.map((r) => Recipe.fromJson(r as Map<String, dynamic>)).toList();
   }
 
   Future<Recipe> getRecipe(String id) async {

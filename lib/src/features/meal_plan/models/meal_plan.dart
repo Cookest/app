@@ -7,9 +7,11 @@ class MealPlan {
 
   factory MealPlan.fromJson(Map<String, dynamic> json) {
     return MealPlan(
-      id: json['id'],
-      slots: (json['slots'] as List).map((s) => MealSlot.fromJson(s)).toList(),
-      nutritionSummary: json['nutrition'],
+      id: json['id']?.toString() ?? '',
+      slots: (json['slots'] as List? ?? [])
+          .map((s) => MealSlot.fromJson(s as Map<String, dynamic>))
+          .toList(),
+      nutritionSummary: json['nutrition'] as Map<String, dynamic>?,
     );
   }
 }
@@ -37,14 +39,14 @@ class MealSlot {
 
   factory MealSlot.fromJson(Map<String, dynamic> json) {
     return MealSlot(
-      id: json['id'],
-      dayOfWeek: json['day_of_week'],
-      mealType: json['meal_type'],
-      isFlex: json['is_flex'],
-      flexType: json['flex_type'],
-      isCompleted: json['is_completed'],
-      servings: json['servings'],
-      recipe: json['recipe'] != null ? RecipeSummary.fromJson(json['recipe']) : null,
+      id: json['id']?.toString() ?? '',
+      dayOfWeek: json['day_of_week'] as int? ?? 0,
+      mealType: json['meal_type']?.toString() ?? 'dinner',
+      isFlex: json['is_flex'] as bool? ?? false,
+      flexType: json['flex_type']?.toString(),
+      isCompleted: json['is_completed'] as bool? ?? false,
+      servings: (json['servings'] ?? json['servings_override']) as int? ?? 2,
+      recipe: json['recipe'] != null ? RecipeSummary.fromJson(json['recipe'] as Map<String, dynamic>) : null,
     );
   }
 }
@@ -66,11 +68,11 @@ class RecipeSummary {
 
   factory RecipeSummary.fromJson(Map<String, dynamic> json) {
     return RecipeSummary(
-      id: json['id'],
-      name: json['name'],
-      cuisine: json['cuisine'],
-      totalTimeMin: json['total_time_min'],
-      difficulty: json['difficulty'],
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Untitled Recipe',
+      cuisine: json['cuisine']?.toString(),
+      totalTimeMin: json['total_time_min'] as int? ?? 0,
+      difficulty: json['difficulty']?.toString() ?? 'medium',
     );
   }
 }

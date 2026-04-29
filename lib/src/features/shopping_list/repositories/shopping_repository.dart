@@ -10,7 +10,16 @@ class ShoppingRepository {
 
   Future<List<ShoppingItem>> getShoppingList() async {
     final response = await _dio.get('/api/shopping-list');
-    return (response.data as List).map((i) => ShoppingItem.fromJson(i)).toList();
+    final data = response.data;
+    final List items;
+    if (data is List) {
+      items = data;
+    } else if (data is Map && data['items'] is List) {
+      items = data['items'] as List;
+    } else {
+      items = [];
+    }
+    return items.map((i) => ShoppingItem.fromJson(i as Map<String, dynamic>)).toList();
   }
 
   Future<void> syncFromPlan() async {

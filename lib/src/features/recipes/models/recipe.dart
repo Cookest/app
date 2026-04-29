@@ -37,22 +37,28 @@ class Recipe {
 
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
-      id: json['id'],
-      name: json['name'],
-      slug: json['slug'],
-      description: json['description'],
-      cuisine: json['cuisine'],
-      category: json['category'],
-      difficulty: json['difficulty'],
-      totalTimeMin: json['total_time_min'],
-      vegetarian: json['vegetarian'] ?? false,
-      vegan: json['vegan'] ?? false,
-      glutenFree: json['gluten_free'] ?? false,
-      dairyFree: json['dairy_free'] ?? false,
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Untitled Recipe',
+      slug: json['slug']?.toString(),
+      description: json['description']?.toString(),
+      cuisine: json['cuisine']?.toString(),
+      category: json['category']?.toString(),
+      difficulty: json['difficulty']?.toString() ?? 'medium',
+      totalTimeMin: json['total_time_min'] as int? ?? 0,
+      vegetarian: json['vegetarian'] as bool? ?? false,
+      vegan: json['vegan'] as bool? ?? false,
+      glutenFree: json['gluten_free'] as bool? ?? false,
+      dairyFree: json['dairy_free'] as bool? ?? false,
       matchPct: (json['match_pct'] as num?)?.toDouble(),
-      images: json['images'] != null ? List<String>.from(json['images']) : null,
-      ingredients: json['ingredients'] != null ? List<String>.from(json['ingredients']) : null,
-      instructions: json['instructions'] != null ? List<String>.from(json['instructions']) : null,
+      images: json['images'] != null
+          ? (json['images'] as List).map((e) => e?.toString() ?? '').toList()
+          : null,
+      ingredients: json['ingredients'] != null
+          ? (json['ingredients'] as List).map((e) => e?.toString() ?? '').toList()
+          : null,
+      instructions: json['instructions'] != null
+          ? (json['instructions'] as List).map((e) => e?.toString() ?? '').toList()
+          : null,
     );
   }
 }

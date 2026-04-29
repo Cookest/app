@@ -183,9 +183,17 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(LucideIcons.packageOpen, size: 48, color: AppTheme.textCaption),
+                        const Icon(LucideIcons.packageOpen, size: 48, color: AppTheme.textCaption),
                         const SizedBox(height: 12),
-                        Text('No items found', style: GoogleFonts.inter(fontSize: 15, color: AppTheme.textMuted)),
+                        Text(
+                          'No items found',
+                          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: AppTheme.darkGreen),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Add items using the + button',
+                          style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+                        ),
                       ],
                     ),
                   );
@@ -196,13 +204,35 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                   groups.putIfAbsent(item.location, () => []).add(item);
                 }
 
-                return ListView(
+                final groupList = groups.entries.toList();
+                return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  children: groups.entries.map((entry) => _buildSection(entry.key, entry.value)).toList(),
+                  itemCount: groupList.length,
+                  itemBuilder: (context, index) =>
+                      _buildSection(groupList[index].key, groupList[index].value),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.sage)),
-              error: (e, _) => Center(child: Text('Error: $e')),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppTheme.sage, strokeWidth: 2.5),
+              ),
+              error: (e, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(LucideIcons.alertCircle, size: 48, color: AppTheme.textCaption),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Something went wrong',
+                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: AppTheme.darkGreen),
+                    ),
+                    const SizedBox(height: 4),
+                    TextButton(
+                      onPressed: () => ref.invalidate(inventoryListProvider),
+                      child: Text('Retry', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.sage)),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],

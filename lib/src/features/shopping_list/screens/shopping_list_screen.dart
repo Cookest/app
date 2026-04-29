@@ -111,13 +111,18 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(LucideIcons.shoppingCart, size: 48, color: AppTheme.textCaption),
+                        const Icon(LucideIcons.shoppingCart, size: 48, color: AppTheme.textCaption),
                         const SizedBox(height: 12),
                         Text(
                           'Your shopping list is empty',
                           style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: AppTheme.darkGreen),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Add items or sync from your meal plan',
+                          style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+                        ),
+                        const SizedBox(height: 8),
                         TextButton(
                           onPressed: _sync,
                           child: Text('Sync from Meal Plan', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.sage)),
@@ -139,8 +144,27 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                   ],
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.sage)),
-              error: (e, _) => Center(child: Text('Error: $e')),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppTheme.sage, strokeWidth: 2.5),
+              ),
+              error: (e, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(LucideIcons.alertCircle, size: 48, color: AppTheme.textCaption),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Something went wrong',
+                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: AppTheme.darkGreen),
+                    ),
+                    const SizedBox(height: 4),
+                    TextButton(
+                      onPressed: () => ref.invalidate(shoppingListProvider),
+                      child: Text('Retry', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.sage)),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -181,7 +205,13 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
             ),
           ),
         ),
-        if (isExpanded) ...items.map((item) => _buildItemRow(item)),
+        if (isExpanded)
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: items.length,
+            itemBuilder: (context, index) => _buildItemRow(items[index]),
+          ),
         const Divider(color: AppTheme.divider),
         const SizedBox(height: 4),
       ],

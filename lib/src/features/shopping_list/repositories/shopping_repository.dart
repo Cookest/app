@@ -23,7 +23,7 @@ class ShoppingRepository {
   }
 
   Future<void> syncFromPlan() async {
-    await _dio.post('/api/shopping-list/sync');
+    await _dio.post('/api/shopping-list/sync', data: {});
   }
 
   Future<void> addItem(String name, double quantity, String unit) async {

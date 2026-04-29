@@ -20,7 +20,7 @@ class MealPlanRepository {
   }
 
   Future<void> generatePlan() async {
-    await _dio.post('/api/meal-plans/generate');
+    await _dio.post('/api/meal-plans/generate', data: {});
   }
 
   Future<void> completeSlot(String planId, String slotId) async {

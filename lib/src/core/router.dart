@@ -112,19 +112,26 @@ class _AppShell extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          tab.icon,
-                          size: 22,
-                          color: isActive ? AppTheme.sage : AppTheme.textCaption,
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 150),
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(opacity: animation, child: child),
+                          child: Icon(
+                            tab.icon,
+                            key: ValueKey(isActive),
+                            size: 22,
+                            color: isActive ? AppTheme.sage : AppTheme.textCaption,
+                          ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          tab.label,
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 150),
                           style: GoogleFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.w400,
                             color: isActive ? AppTheme.sage : AppTheme.textCaption,
                           ),
+                          child: Text(tab.label),
                         ),
                       ],
                     ),

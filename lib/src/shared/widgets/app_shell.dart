@@ -10,17 +10,18 @@ class AppShell extends StatelessWidget {
 
   static final _tabs = [
     (icon: LucideIcons.home, label: 'Home', path: '/'),
+    (icon: LucideIcons.calendarDays, label: 'Meals', path: '/meals'),
     (icon: LucideIcons.bookOpen, label: 'Recipes', path: '/recipes'),
-    (icon: LucideIcons.calendarDays, label: 'Meal Plan', path: '/meal-plan'),
     (icon: LucideIcons.package, label: 'Pantry', path: '/pantry'),
-    (icon: LucideIcons.messageCircle, label: 'Chat', path: '/chat'),
+    (icon: LucideIcons.shoppingCart, label: 'Groceries', path: '/groceries'),
   ];
 
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
     for (var i = 0; i < _tabs.length; i++) {
-      if (location.startsWith(_tabs[i].path) &&
-          (_tabs[i].path == '/' ? location == '/' : true)) {
+      if (_tabs[i].path == '/') {
+        if (location == '/') return i;
+      } else if (location.startsWith(_tabs[i].path)) {
         return i;
       }
     }
@@ -35,20 +36,21 @@ class AppShell extends StatelessWidget {
       body: child,
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: AppTheme.border)),
+          color: AppTheme.surface,
+          border: Border(top: BorderSide(color: AppTheme.divider, width: 1)),
         ),
         child: BottomNavigationBar(
           currentIndex: currentIndex,
           type: BottomNavigationBarType.fixed,
-          backgroundColor: AppTheme.background,
-          selectedItemColor: AppTheme.primary,
-          unselectedItemColor: AppTheme.mutedForeground,
+          backgroundColor: AppTheme.surface,
+          selectedItemColor: AppTheme.sage,
+          unselectedItemColor: AppTheme.textCaption,
           selectedFontSize: 10,
           unselectedFontSize: 10,
           elevation: 0,
           onTap: (i) => context.go(_tabs[i].path),
           items: _tabs.map((t) => BottomNavigationBarItem(
-            icon: Icon(t.icon, size: 20),
+            icon: Icon(t.icon, size: 22),
             label: t.label,
           )).toList(),
         ),

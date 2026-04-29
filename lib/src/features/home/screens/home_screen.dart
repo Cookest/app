@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../../meal_plan/repositories/meal_plan_repository.dart';
 import '../../meal_plan/models/meal_plan.dart';
 import '../../pantry/repositories/inventory_repository.dart';
+import '../../../shared/theme/shadcn_theme.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -16,45 +25,261 @@ class HomeScreen extends ConsumerWidget {
     final expiringCountAsync = ref.watch(expiringCountProvider);
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 120.0,
-            floating: false,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text('Cookest', style: TextStyle(color: Colors.green.shade900, fontWeight: FontWeight.bold)),
-              background: Container(color: Colors.white),
-            ),
-            actions: [
-              IconButton(onPressed: () {}, icon: const Icon(LucideIcons.bell)),
-              const CircleAvatar(radius: 16, child: Icon(Icons.person, size: 20)),
-              const SizedBox(width: 16),
+      backgroundColor: AppTheme.background,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 24),
+              _buildHeader(context),
+              const SizedBox(height: 28),
+              _buildSectionLabel(context, 'What\'s cooking right now?', showViewAll: true, onViewAll: () => context.go('/meals')),
+              const SizedBox(height: 16),
+              mealPlanAsync.when(
+                data: (plan) => _buildFeaturedCard(context, plan),
+                loading: () => _buildFeaturedCardPlaceholder(),
+                error: (_, __) => _buildFeaturedCardPlaceholder(),
+              ),
+              const SizedBox(height: 16),
+              expiringCountAsync.when(
+                data: (count) => count > 0 ? _buildAlertStrip(context, count) : const SizedBox.shrink(),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+              const SizedBox(height: 16),
+              _buildHostingRow(context),
+              const SizedBox(height: 40),
             ],
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildStatsRow(expiringCountAsync),
-                  const SizedBox(height: 24),
-                  Text('Today\'s Meals', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  mealPlanAsync.when(
-                    data: (plan) => _buildTodayMeals(context, plan),
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Center(child: Text('Error: $e')),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Text(
+            '${_greeting()}, Chef',
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 26,
+              fontWeight: FontWeight.normal,
+              color: AppTheme.darkGreen,
+            ),
+          ),
+        ),
+        GestureDetector(
+          onTap: () => context.push('/profile'),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: AppTheme.sage,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                'C',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.surface,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionLabel(BuildContext context, String label, {bool showViewAll = false, VoidCallback? onViewAll}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 18,
+            fontWeight: FontWeight.normal,
+            color: AppTheme.darkGreen,
+          ),
+        ),
+        if (showViewAll) ...[
+          const Spacer(),
+          GestureDetector(
+            onTap: onViewAll,
+            child: Text(
+              'View all',
+              style: GoogleFonts.inter(fontSize: 13, color: AppTheme.sage),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildFeaturedCard(BuildContext context, MealPlan? plan) {
+    final today = DateTime.now().weekday - 1;
+    MealSlot? featuredSlot;
+    if (plan != null) {
+      final todaySlots = plan.slots.where((s) => s.dayOfWeek == today && s.recipe != null).toList();
+      if (todaySlots.isNotEmpty) featuredSlot = todaySlots.first;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [AppTheme.cardShadow],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 180,
+            width: double.infinity,
+            color: const Color(0xFFE8F0E4),
+            child: Center(
+              child: Icon(LucideIcons.utensils, size: 48, color: AppTheme.sage.withOpacity(0.4)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  featuredSlot?.recipe?.name ?? 'No recipe planned today',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 18,
+                    fontWeight: FontWeight.normal,
+                    color: AppTheme.darkGreen,
                   ),
-                  const SizedBox(height: 24),
-                  Text('Nutrition Progress', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  _buildNutritionProgress(),
-                  const SizedBox(height: 24),
-                  _buildQuickActions(context),
-                  const SizedBox(height: 40),
-                ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(LucideIcons.clock, size: 14, color: AppTheme.textMuted),
+                    const SizedBox(width: 4),
+                    Text(
+                      featuredSlot?.recipe != null ? '${featuredSlot!.recipe!.totalTimeMin} mins' : '—',
+                      style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+                    ),
+                    const SizedBox(width: 12),
+                    Icon(LucideIcons.star, size: 14, color: AppTheme.textMuted),
+                    const SizedBox(width: 4),
+                    Text('4.0', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: featuredSlot?.recipe != null
+                            ? () => context.push('/recipes/${featuredSlot!.recipe!.id}')
+                            : null,
+                        child: Text('Cook it!', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    TextButton(
+                      onPressed: featuredSlot?.recipe != null
+                          ? () => context.push('/recipes/${featuredSlot!.recipe!.id}')
+                          : null,
+                      style: TextButton.styleFrom(foregroundColor: AppTheme.sage),
+                      child: Text('View details', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.sage)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeaturedCardPlaceholder() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [AppTheme.cardShadow],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Container(
+            height: 180,
+            width: double.infinity,
+            color: const Color(0xFFE8F0E4),
+            child: Center(
+              child: Icon(LucideIcons.utensils, size: 48, color: AppTheme.sage.withOpacity(0.4)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No recipe planned today',
+                  style: GoogleFonts.playfairDisplay(fontSize: 18, color: AppTheme.darkGreen),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Set up your meal plan to see today\'s recipe here.',
+                  style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted, height: 1.5),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: null,
+                  child: Text('Cook it!', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAlertStrip(BuildContext context, int count) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.amberLight,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(LucideIcons.alertTriangle, size: 16, color: AppTheme.amber),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$count item${count == 1 ? '' : 's'} expiring soon',
+              style: GoogleFonts.inter(fontSize: 13, color: AppTheme.amber),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => context.go('/pantry'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.amber,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'Use it',
+                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
               ),
             ),
           ),
@@ -63,154 +288,25 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatsRow(AsyncValue<int> expiringCountAsync) {
+  Widget _buildHostingRow(BuildContext context) {
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard(
-            'Expiring',
-            expiringCountAsync.when(data: (c) => '$c', loading: () => '...', error: (_, __) => '0'),
-            LucideIcons.alertTriangle,
-            Colors.orange,
+          child: Text(
+            'Hosting a meal?',
+            style: GoogleFonts.inter(fontSize: 15, color: AppTheme.darkGreen),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard('Streak', '5', LucideIcons.flame, Colors.red),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard('Saved', '€12.40', LucideIcons.wallet, Colors.green),
+        OutlinedButton(
+          onPressed: () => context.go('/meals'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppTheme.sage,
+            side: const BorderSide(color: AppTheme.sage),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          ),
+          child: Text('Plan it', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.sage)),
         ),
       ],
-    ).animate().fadeIn().slideY(begin: 0.1);
-  }
-
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 4),
-          Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-          Text(label, style: TextStyle(fontSize: 12, color: color.withOpacity(0.8))),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTodayMeals(BuildContext context, MealPlan? plan) {
-    if (plan == null) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(16)),
-        child: Column(
-          children: [
-            const Text('No active meal plan found.'),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: () {}, child: const Text('Generate Weekly Plan')),
-          ],
-        ),
-      );
-    }
-
-    final today = DateTime.now().weekday - 1; // 0-6
-    final todaySlots = plan.slots.where((s) => s.dayOfWeek == today).toList();
-
-    return Column(
-      children: todaySlots.map((slot) => _buildMealCard(context, slot)).toList(),
-    );
-  }
-
-  Widget _buildMealCard(BuildContext context, MealSlot slot) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
-          child: Center(child: Text(slot.mealType[0].toUpperCase(), style: TextStyle(color: Colors.green.shade800, fontWeight: FontWeight.bold))),
-        ),
-        title: Text(slot.recipe?.name ?? (slot.isFlex ? 'Flex: ${slot.flexType}' : 'No recipe selected'), style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('${slot.mealType[0].toUpperCase()}${slot.mealType.substring(1)} • ${slot.servings} servings'),
-        trailing: slot.isCompleted 
-            ? const Icon(Icons.check_circle, color: Colors.green)
-            : Checkbox(value: false, onChanged: (v) {}),
-      ),
-    ).animate().fadeIn().slideX(begin: 0.05);
-  }
-
-  Widget _buildNutritionProgress() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200)),
-      child: Column(
-        children: [
-          _buildProgressBar('Calories', 0.7, Colors.green),
-          const SizedBox(height: 12),
-          _buildProgressBar('Protein', 0.4, Colors.blue),
-          const SizedBox(height: 12),
-          _buildProgressBar('Carbs', 0.8, Colors.orange),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressBar(String label, double value, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-            Text('${(value * 100).toInt()}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        const SizedBox(height: 4),
-        LinearProgressIndicator(value: value, backgroundColor: color.withOpacity(0.1), valueColor: AlwaysStoppedAnimation(color), minHeight: 6),
-      ],
-    );
-  }
-
-  Widget _buildQuickActions(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _buildActionButton(LucideIcons.plus, 'Add to Pantry', () {}),
-        _buildActionButton(LucideIcons.search, 'Find Recipes', () {}),
-        _buildActionButton(LucideIcons.messageSquare, 'AI Chat', () => context.push('/chat')),
-        _buildActionButton(LucideIcons.settings, 'Settings', () {}),
-      ],
-    );
-  }
-
-  Widget _buildActionButton(IconData icon, String label, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 100,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          children: [
-            Icon(icon, size: 20),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
-          ],
-        ),
-      ),
     );
   }
 }

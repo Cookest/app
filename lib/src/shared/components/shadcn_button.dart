@@ -32,8 +32,8 @@ class ShadcnButton extends StatelessWidget {
         ShadcnButtonVariant.defaultBtn => ElevatedButton(
             onPressed: isLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primary,
-              foregroundColor: AppTheme.onPrimary,
+              backgroundColor: AppTheme.sage,
+              foregroundColor: AppTheme.surface,
             ),
             child: _buildContent(),
           ),
@@ -56,8 +56,8 @@ class ShadcnButton extends StatelessWidget {
         ShadcnButtonVariant.secondary => ElevatedButton(
             onPressed: isLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.muted,
-              foregroundColor: AppTheme.onBackground,
+              backgroundColor: AppTheme.divider,
+              foregroundColor: AppTheme.darkGreen,
               elevation: 0,
             ),
             child: _buildContent(),
@@ -65,14 +65,14 @@ class ShadcnButton extends StatelessWidget {
         ShadcnButtonVariant.ghost => TextButton(
             onPressed: isLoading ? null : onPressed,
             style: TextButton.styleFrom(
-              foregroundColor: AppTheme.onBackground,
+              foregroundColor: AppTheme.darkGreen,
             ),
             child: _buildContent(),
           ),
         ShadcnButtonVariant.link => TextButton(
             onPressed: isLoading ? null : onPressed,
             style: TextButton.styleFrom(
-              foregroundColor: AppTheme.primary,
+              foregroundColor: AppTheme.sage,
               textStyle: const TextStyle(decoration: TextDecoration.underline),
             ),
             child: _buildContent(),
@@ -88,13 +88,10 @@ class ShadcnButton extends StatelessWidget {
         height: 16,
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation(Colors.white), // Adjust based on variant if needed
+          valueColor: AlwaysStoppedAnimation(Colors.white),
         ),
       );
     }
-    
-    // For variants with dark text, loader should probably be dark. 
-    // Simplifying for now.
 
     return Row(
       mainAxisSize: MainAxisSize.min,

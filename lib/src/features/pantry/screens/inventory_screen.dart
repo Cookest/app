@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
 import '../repositories/inventory_repository.dart';
 import '../models/inventory_item.dart';
+import '../../../shared/theme/shadcn_theme.dart';
 
 class InventoryScreen extends ConsumerStatefulWidget {
   const InventoryScreen({super.key});
@@ -12,22 +14,14 @@ class InventoryScreen extends ConsumerStatefulWidget {
   ConsumerState<InventoryScreen> createState() => _InventoryScreenState();
 }
 
-class _InventoryScreenState extends ConsumerState<InventoryScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final List<String> _locations = ['all', 'fridge', 'pantry', 'freezer'];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: _locations.length, vsync: this);
-    _tabController.addListener(() {
-      setState(() {});
-    });
-  }
+class _InventoryScreenState extends ConsumerState<InventoryScreen> {
+  final Set<String> _expandedSections = {'fridge', 'pantry', 'freezer', 'other'};
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -41,48 +35,67 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> with SingleTi
     await showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
+        builder: (context, setDialogState) {
           return AlertDialog(
-            title: const Text('Add Item'),
+            backgroundColor: AppTheme.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text('Add Item', style: GoogleFonts.playfairDisplay(fontSize: 20, color: AppTheme.darkGreen)),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Item Name'),
+                    decoration: InputDecoration(
+                      labelText: 'Item Name',
+                      labelStyle: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+                    ),
                   ),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: TextField(
                           controller: quantityController,
-                          decoration: const InputDecoration(labelText: 'Quantity'),
+                          decoration: InputDecoration(
+                            labelText: 'Quantity',
+                            labelStyle: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+                          ),
                           keyboardType: TextInputType.number,
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: TextField(
                           controller: unitController,
-                          decoration: const InputDecoration(labelText: 'Unit (e.g. g, pcs)'),
+                          decoration: InputDecoration(
+                            labelText: 'Unit',
+                            labelStyle: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     value: location,
-                    decoration: const InputDecoration(labelText: 'Location'),
+                    decoration: InputDecoration(
+                      labelText: 'Location',
+                      labelStyle: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+                    ),
                     items: ['fridge', 'pantry', 'freezer'].map((loc) {
                       return DropdownMenuItem(value: loc, child: Text(loc[0].toUpperCase() + loc.substring(1)));
                     }).toList(),
-                    onChanged: (v) => setState(() => location = v!),
+                    onChanged: (v) => setDialogState(() => location = v!),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   ListTile(
-                    title: Text(expiryDate == null ? 'Set Expiry Date' : 'Expires: ${DateFormat.yMd().format(expiryDate!)}'),
-                    trailing: const Icon(LucideIcons.calendar),
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      expiryDate == null ? 'Set Expiry Date' : 'Expires: ${DateFormat.yMd().format(expiryDate!)}',
+                      style: GoogleFonts.inter(fontSize: 14, color: AppTheme.darkGreen),
+                    ),
+                    trailing: const Icon(LucideIcons.calendar, color: AppTheme.sage),
                     onTap: () async {
                       final date = await showDatePicker(
                         context: context,
@@ -90,20 +103,20 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> with SingleTi
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
-                      if (date != null) {
-                        setState(() => expiryDate = date);
-                      }
+                      if (date != null) setDialogState(() => expiryDate = date);
                     },
                   ),
                 ],
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textMuted)),
+              ),
               ElevatedButton(
                 onPressed: () async {
                   if (nameController.text.isEmpty) return;
-                  
                   await ref.read(inventoryRepositoryProvider).addItem({
                     'name': nameController.text,
                     'quantity': double.tryParse(quantityController.text) ?? 1.0,
@@ -111,16 +124,15 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> with SingleTi
                     'location': location,
                     if (expiryDate != null) 'expiry_date': expiryDate!.toIso8601String(),
                   });
-                  
                   ref.invalidate(inventoryListProvider);
                   ref.invalidate(expiringCountProvider);
                   if (context.mounted) Navigator.pop(context);
                 },
-                child: const Text('Add'),
+                child: Text('Add', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500)),
               ),
             ],
           );
-        }
+        },
       ),
     );
   }
@@ -130,61 +142,127 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> with SingleTi
     final inventoryAsync = ref.watch(inventoryListProvider);
 
     return Scaffold(
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Inventory', style: TextStyle(fontWeight: FontWeight.bold)),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabs: _locations.map((loc) => Tab(text: loc == 'all' ? 'All Items' : loc[0].toUpperCase() + loc.substring(1))).toList(),
+        backgroundColor: AppTheme.background,
+        elevation: 0,
+        title: Text(
+          'Pantry',
+          style: GoogleFonts.playfairDisplay(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.darkGreen),
         ),
       ),
-      body: inventoryAsync.when(
-        data: (items) {
-          final currentLocation = _locations[_tabController.index];
-          final filteredItems = currentLocation == 'all' 
-              ? items 
-              : items.where((i) => i.location == currentLocation).toList();
-          
-          filteredItems.sort((a, b) {
-            if (a.expiryDate == null && b.expiryDate == null) return 0;
-            if (a.expiryDate == null) return 1;
-            if (b.expiryDate == null) return -1;
-            return a.expiryDate!.compareTo(b.expiryDate!);
-          });
-
-          if (filteredItems.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.packageOpen, size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  const Text('No items found'),
-                ],
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search items',
+                prefixIcon: const Icon(LucideIcons.search, size: 18, color: AppTheme.textCaption),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppTheme.border)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppTheme.border)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppTheme.sage, width: 1.5)),
+                filled: true,
+                fillColor: AppTheme.surface,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                hintStyle: GoogleFonts.inter(fontSize: 14, color: AppTheme.textCaption),
               ),
-            );
-          }
+              onChanged: (v) => setState(() => _searchQuery = v),
+            ),
+          ),
+          Expanded(
+            child: inventoryAsync.when(
+              data: (items) {
+                final filtered = _searchQuery.isEmpty
+                    ? items
+                    : items.where((i) => i.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: filteredItems.length,
-            itemBuilder: (context, index) => _buildInventoryItem(filteredItems[index]),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+                if (filtered.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(LucideIcons.packageOpen, size: 48, color: AppTheme.textCaption),
+                        const SizedBox(height: 12),
+                        Text('No items found', style: GoogleFonts.inter(fontSize: 15, color: AppTheme.textMuted)),
+                      ],
+                    ),
+                  );
+                }
+
+                final groups = <String, List<InventoryItem>>{};
+                for (final item in filtered) {
+                  groups.putIfAbsent(item.location, () => []).add(item);
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  children: groups.entries.map((entry) => _buildSection(entry.key, entry.value)).toList(),
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.sage)),
+              error: (e, _) => Center(child: Text('Error: $e')),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddItemDialog,
-        backgroundColor: Colors.green,
-        child: const Icon(LucideIcons.plus, color: Colors.white),
+        backgroundColor: AppTheme.sage,
+        foregroundColor: AppTheme.surface,
+        elevation: 2,
+        child: const Icon(LucideIcons.plus),
       ),
     );
   }
 
-  Widget _buildInventoryItem(InventoryItem item) {
-    final bool isExpiringSoon = item.expiryDate != null && item.expiryDate!.difference(DateTime.now()).inDays <= 3;
-    final bool isExpired = item.expiryDate != null && item.expiryDate!.isBefore(DateTime.now());
+  Widget _buildSection(String location, List<InventoryItem> items) {
+    final isExpanded = _expandedSections.contains(location);
+    final label = location[0].toUpperCase() + location.substring(1);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: () => setState(() {
+            if (isExpanded) {
+              _expandedSections.remove(location);
+            } else {
+              _expandedSections.add(location);
+            }
+          }),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.darkGreen),
+                ),
+                const Spacer(),
+                Icon(
+                  isExpanded ? LucideIcons.chevronDown : LucideIcons.chevronRight,
+                  size: 18,
+                  color: AppTheme.textMuted,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (isExpanded) ...items.map((item) => _buildItemRow(item)),
+        const Divider(color: AppTheme.divider),
+        const SizedBox(height: 4),
+      ],
+    );
+  }
+
+  Widget _buildItemRow(InventoryItem item) {
+    final now = DateTime.now();
+    final daysUntilExpiry = item.expiryDate != null ? item.expiryDate!.difference(now).inDays : null;
+    final isExpiringSoon = daysUntilExpiry != null && daysUntilExpiry <= 5 && daysUntilExpiry >= 0;
+    final isExpiredToday = daysUntilExpiry != null && daysUntilExpiry <= 1;
+    final isExpired = daysUntilExpiry != null && daysUntilExpiry < 0;
 
     return Dismissible(
       key: Key(item.id),
@@ -192,73 +270,61 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> with SingleTi
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        color: Colors.red,
-        child: const Icon(LucideIcons.trash2, color: Colors.white),
+        decoration: BoxDecoration(
+          color: AppTheme.destructive,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
       ),
       onDismissed: (_) async {
         await ref.read(inventoryRepositoryProvider).deleteItem(item.id);
         ref.invalidate(inventoryListProvider);
         ref.invalidate(expiringCountProvider);
       },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: isExpired || isExpiringSoon 
-              ? BorderSide(color: isExpired ? Colors.red : Colors.orange, width: 1) 
-              : BorderSide.none,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: (isExpiredToday && !isExpired) ? AppTheme.amberVeryLight : AppTheme.surface,
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: _getLocationColor(item.location).withOpacity(0.2),
-            child: Icon(_getLocationIcon(item.location), color: _getLocationColor(item.location), size: 20),
-          ),
-          title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text('${item.quantity} ${item.unit}'),
-          trailing: item.expiryDate != null
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      isExpired ? 'Expired' : (isExpiringSoon ? 'Expiring' : 'Expires'),
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: isExpired ? Colors.red : (isExpiringSoon ? Colors.orange : Colors.grey),
-                        fontWeight: isExpired || isExpiringSoon ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                    Text(
-                      DateFormat.MMMd().format(item.expiryDate!),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isExpired ? Colors.red : (isExpiringSoon ? Colors.orange : Colors.grey.shade800),
-                        fontWeight: isExpired || isExpiringSoon ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                )
-              : null,
+        child: Row(
+          children: [
+            if (isExpiringSoon || isExpired)
+              Container(
+                width: 6,
+                height: 6,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: isExpired ? AppTheme.destructive : AppTheme.amber,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            Expanded(
+              child: Text(
+                item.name,
+                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.darkGreen),
+              ),
+            ),
+            Text(
+              '${item.quantity} ${item.unit}',
+              style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+            ),
+            if (item.expiryDate != null) ...[
+              const SizedBox(width: 12),
+              Text(
+                DateFormat.MMMd().format(item.expiryDate!),
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: isExpired ? AppTheme.destructive : (isExpiringSoon ? AppTheme.amber : AppTheme.textMuted),
+                  fontWeight: isExpiringSoon || isExpired ? FontWeight.w500 : FontWeight.w400,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
   }
-
-  Color _getLocationColor(String location) {
-    switch (location) {
-      case 'fridge': return Colors.blue;
-      case 'freezer': return Colors.cyan;
-      case 'pantry': return Colors.orange;
-      default: return Colors.grey;
-    }
-  }
-
-  IconData _getLocationIcon(String location) {
-    switch (location) {
-      case 'fridge': return LucideIcons.refrigerator;
-      case 'freezer': return LucideIcons.snowflake;
-      case 'pantry': return LucideIcons.package;
-      default: return LucideIcons.box;
-    }
-  }
 }
+

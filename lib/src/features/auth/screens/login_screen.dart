@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import '../repositories/auth_repository.dart';
 import '../providers/auth_provider.dart';
+import '../../../shared/theme/shadcn_theme.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -28,30 +31,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
+    setState(() { _isLoading = true; _errorMessage = null; });
     try {
       final token = await ref.read(authRepositoryProvider).login(
         _emailController.text,
         _passwordController.text,
       );
       ref.read(authProvider.notifier).setToken(token);
-      // Router will redirect automatically
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
+      setState(() { _errorMessage = e.toString(); _isLoading = false; });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -61,33 +56,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 48),
-                const Icon(Icons.restaurant, size: 64, color: Colors.green)
-                    .animate()
-                    .scale(duration: 600.ms, curve: Curves.easeOutBack),
+                Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: const BoxDecoration(
+                      color: AppTheme.sage,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(LucideIcons.chefHat, size: 36, color: Colors.white),
+                  ),
+                ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
                 const SizedBox(height: 24),
                 Text(
                   'Welcome Back',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green.shade900,
+                    color: AppTheme.darkGreen,
                   ),
                   textAlign: TextAlign.center,
                 ).animate().fadeIn(delay: 200.ms),
                 const SizedBox(height: 8),
                 Text(
                   'Sign in to continue planning your meals',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
+                  style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textMuted, height: 1.5),
                   textAlign: TextAlign.center,
                 ).animate().fadeIn(delay: 400.ms),
                 const SizedBox(height: 48),
                 TextFormField(
                   controller: _emailController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Email',
-                    prefixIcon: Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(),
+                    labelStyle: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+                    prefixIcon: const Icon(LucideIcons.mail, size: 18, color: AppTheme.textCaption),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) => value?.isEmpty ?? true ? 'Enter your email' : null,
@@ -95,10 +98,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock_outline),
-                    border: OutlineInputBorder(),
+                    labelStyle: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+                    prefixIcon: const Icon(LucideIcons.lock, size: 18, color: AppTheme.textCaption),
                   ),
                   obscureText: true,
                   validator: (value) => value?.isEmpty ?? true ? 'Enter your password' : null,
@@ -107,27 +110,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 16),
                   Text(
                     _errorMessage!,
-                    style: const TextStyle(color: Colors.red),
+                    style: GoogleFonts.inter(fontSize: 13, color: AppTheme.destructive),
                     textAlign: TextAlign.center,
                   ),
                 ],
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
                 ElevatedButton(
                   onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppTheme.sage,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
                   ),
                   child: _isLoading
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      : Text('Sign In', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600)),
                 ).animate().scale(delay: 800.ms),
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () => context.push('/register'),
-                  child: const Text('Don\'t have an account? Register'),
+                  child: Text(
+                    "Don't have an account? Register",
+                    style: GoogleFonts.inter(fontSize: 14, color: AppTheme.sage),
+                  ),
                 ),
               ],
             ),
@@ -137,3 +144,4 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 }
+

@@ -36,7 +36,7 @@ class ShadcnInput extends StatelessWidget {
             label!,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.onBackground,
+                  color: AppTheme.darkGreen,
                 ),
           ),
           const SizedBox(height: 6),
@@ -49,7 +49,7 @@ class ShadcnInput extends StatelessWidget {
           onChanged: onChanged,
           maxLines: obscureText ? 1 : maxLines,
           style: const TextStyle(fontSize: 14),
-          cursorColor: AppTheme.primary,
+          cursorColor: AppTheme.sage,
           decoration: InputDecoration(
             hintText: placeholder,
             isDense: true,

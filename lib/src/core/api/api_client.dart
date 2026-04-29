@@ -57,3 +57,28 @@ final dioProvider = Provider<Dio>((ref) {
 
   return dio;
 });
+
+class ApiClient {
+  final Dio _dio;
+  ApiClient(this._dio);
+
+  Future<T> post<T>(String path, {dynamic data}) async {
+    final response = await _dio.post<T>(path, data: data);
+    return response.data as T;
+  }
+
+  Future<T> get<T>(String path, {Map<String, dynamic>? queryParameters}) async {
+    final response = await _dio.get<T>(path, queryParameters: queryParameters);
+    return response.data as T;
+  }
+
+  Future<T> delete<T>(String path) async {
+    final response = await _dio.delete<T>(path);
+    return response.data as T;
+  }
+}
+
+final apiClientProvider = Provider<ApiClient>((ref) {
+  final dio = ref.watch(dioProvider);
+  return ApiClient(dio);
+});

@@ -4,7 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:lucide_icons/lucide_icons.dart';
 import '../features/auth/providers/auth_provider.dart';
-// Import screens (will create them next)
+import '../features/auth/screens/splash_screen.dart';
+import '../features/auth/screens/login_screen.dart';
+import '../features/auth/screens/register_screen.dart';
+import '../features/auth/screens/onboarding_screen.dart';
+import '../features/home/screens/home_screen.dart';
 import '../features/recipes/screens/recipes_screen.dart';
 import '../features/meal_plan/screens/meal_plan_screen.dart';
 import '../features/pantry/screens/inventory_screen.dart';

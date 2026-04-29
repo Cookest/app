@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:cookie_jar/cookie_jar.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config.dart';
 import '../../features/auth/providers/auth_provider.dart';
@@ -14,8 +15,10 @@ final dioProvider = Provider<Dio>((ref) {
     receiveTimeout: const Duration(seconds: 10),
   ));
 
-  final cookieJar = ref.watch(cookieJarProvider);
-  dio.interceptors.add(CookieManager(cookieJar));
+  if (!kIsWeb) {
+    final cookieJar = ref.watch(cookieJarProvider);
+    dio.interceptors.add(CookieManager(cookieJar));
+  }
 
   dio.interceptors.add(InterceptorsWrapper(
     onRequest: (options, handler) {

@@ -63,7 +63,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 48),
                 const Icon(Icons.restaurant, size: 64, color: Colors.green)
                     .animate()
-                    .scale(duration: 600.ms, curve: Curves.backOut),
+                    .scale(duration: 600.ms, curve: Curves.easeOutBack),
                 const SizedBox(height: 24),
                 Text(
                   'Welcome Back',

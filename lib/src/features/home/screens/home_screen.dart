@@ -36,16 +36,40 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 28),
               _buildSectionLabel(context, 'What\'s cooking right now?', showViewAll: true, onViewAll: () => context.go('/meals')),
               const SizedBox(height: 16),
-              mealPlanAsync.when(
-                data: (plan) => _buildFeaturedCard(context, plan),
-                loading: () => _buildFeaturedCardPlaceholder(),
-                error: (_, __) => _buildFeaturedCardPlaceholder(),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 350),
+                transitionBuilder: (child, animation) =>
+                    FadeTransition(opacity: animation, child: child),
+                child: mealPlanAsync.when(
+                  data: (plan) => KeyedSubtree(
+                    key: const ValueKey('featured-loaded'),
+                    child: _buildFeaturedCard(context, plan),
+                  ),
+                  loading: () => KeyedSubtree(
+                    key: const ValueKey('featured-loading'),
+                    child: _buildFeaturedCardPlaceholder(),
+                  ),
+                  error: (_, _) => KeyedSubtree(
+                    key: const ValueKey('featured-error'),
+                    child: _buildFeaturedCardPlaceholder(),
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
-              expiringCountAsync.when(
-                data: (count) => count > 0 ? _buildAlertStrip(context, count) : const SizedBox.shrink(),
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) =>
+                    FadeTransition(opacity: animation, child: child),
+                child: expiringCountAsync.when(
+                  data: (count) => count > 0
+                      ? KeyedSubtree(
+                          key: ValueKey('alert-$count'),
+                          child: _buildAlertStrip(context, count),
+                        )
+                      : const SizedBox.shrink(key: ValueKey('alert-none')),
+                  loading: () => const SizedBox.shrink(key: ValueKey('alert-loading')),
+                  error: (_, _) => const SizedBox.shrink(key: ValueKey('alert-error')),
+                ),
               ),
               const SizedBox(height: 16),
               _buildHostingRow(context),
@@ -131,77 +155,82 @@ class HomeScreen extends ConsumerWidget {
       if (todaySlots.isNotEmpty) featuredSlot = todaySlots.first;
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [AppTheme.cardShadow],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 180,
-            width: double.infinity,
-            color: const Color(0xFFE8F0E4),
-            child: Center(
-              child: Icon(LucideIcons.utensils, size: 48, color: AppTheme.sage.withOpacity(0.4)),
+    return _PressableContainer(
+      onTap: featuredSlot?.recipe != null
+          ? () => context.push('/recipes/${featuredSlot!.recipe!.id}')
+          : () => context.go('/meals'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [AppTheme.cardShadow],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 180,
+              width: double.infinity,
+              color: const Color(0xFFE8F0E4),
+              child: Center(
+                child: Icon(LucideIcons.utensils, size: 48, color: AppTheme.sage.withValues(alpha: 0.4)),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  featuredSlot?.recipe?.name ?? 'No recipe planned today',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 18,
-                    fontWeight: FontWeight.normal,
-                    color: AppTheme.darkGreen,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(LucideIcons.clock, size: 14, color: AppTheme.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      featuredSlot?.recipe != null ? '${featuredSlot!.recipe!.totalTimeMin} mins' : '—',
-                      style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    featuredSlot?.recipe?.name ?? 'No recipe planned today',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 18,
+                      fontWeight: FontWeight.normal,
+                      color: AppTheme.darkGreen,
                     ),
-                    const SizedBox(width: 12),
-                    Icon(LucideIcons.star, size: 14, color: AppTheme.textMuted),
-                    const SizedBox(width: 4),
-                    Text('4.0', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(LucideIcons.clock, size: 14, color: AppTheme.textMuted),
+                      const SizedBox(width: 4),
+                      Text(
+                        featuredSlot?.recipe != null ? '${featuredSlot!.recipe!.totalTimeMin} mins' : '—',
+                        style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
+                      ),
+                      const SizedBox(width: 12),
+                      const Icon(LucideIcons.star, size: 14, color: AppTheme.textMuted),
+                      const SizedBox(width: 4),
+                      Text('4.0', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: featuredSlot?.recipe != null
+                              ? () => context.push('/recipes/${featuredSlot!.recipe!.id}')
+                              : () => context.go('/meals'),
+                          child: Text('Cook it!', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      TextButton(
                         onPressed: featuredSlot?.recipe != null
                             ? () => context.push('/recipes/${featuredSlot!.recipe!.id}')
-                            : null,
-                        child: Text('Cook it!', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500)),
+                            : () => context.go('/meals'),
+                        style: TextButton.styleFrom(foregroundColor: AppTheme.sage),
+                        child: Text('View details', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.sage)),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    TextButton(
-                      onPressed: featuredSlot?.recipe != null
-                          ? () => context.push('/recipes/${featuredSlot!.recipe!.id}')
-                          : null,
-                      style: TextButton.styleFrom(foregroundColor: AppTheme.sage),
-                      child: Text('View details', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.sage)),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -221,7 +250,7 @@ class HomeScreen extends ConsumerWidget {
             width: double.infinity,
             color: const Color(0xFFE8F0E4),
             child: Center(
-              child: Icon(LucideIcons.utensils, size: 48, color: AppTheme.sage.withOpacity(0.4)),
+              child: Icon(LucideIcons.utensils, size: 48, color: AppTheme.sage.withValues(alpha: 0.4)),
             ),
           ),
           Padding(
@@ -260,7 +289,7 @@ class HomeScreen extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Icon(LucideIcons.alertTriangle, size: 16, color: AppTheme.amber),
+          const Icon(LucideIcons.alertTriangle, size: 16, color: AppTheme.amber),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -306,6 +335,33 @@ class HomeScreen extends ConsumerWidget {
           child: Text('Plan it', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.sage)),
         ),
       ],
+    );
+  }
+}
+
+class _PressableContainer extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  const _PressableContainer({required this.child, this.onTap});
+
+  @override
+  State<_PressableContainer> createState() => _PressableContainerState();
+}
+
+class _PressableContainerState extends State<_PressableContainer> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        child: widget.child,
+      ),
     );
   }
 }

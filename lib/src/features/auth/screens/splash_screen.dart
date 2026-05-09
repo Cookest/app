@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cookest_ui/cookest_ui.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/storage/secure_storage.dart';
 import '../providers/auth_provider.dart';
 import '../../../core/services/push_notification_service.dart';
 
@@ -35,6 +37,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         if (mounted) context.go('/login');
       }
     } catch (e) {
+      final rememberMe = await SecureStorage.getRememberMe();
+      if (rememberMe) {
+        final storedToken = await SecureStorage.getAccessToken();
+        if (storedToken != null && !JwtDecoder.isExpired(storedToken)) {
+          ref.read(authProvider.notifier).setToken(storedToken);
+          ref.read(pushNotificationServiceProvider).initializeAndRegisterToken();
+          if (mounted) context.go('/');
+          return;
+        }
+      }
       if (mounted) context.go('/login');
     }
   }

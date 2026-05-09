@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cookest_ui/cookest_ui.dart';
+import 'package:cookest/src/core/theme/app_colors.dart';
 import '../repositories/recipe_repository.dart';
 import '../models/recipe.dart';
 
@@ -54,16 +55,16 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     final matchInventory = ref.watch(recipeMatchInventoryProvider);
 
     return Scaffold(
-      backgroundColor: CookestTokens.colorBackgroundLight,
+      backgroundColor: context.appBackground,
       appBar: AppBar(
-        backgroundColor: CookestTokens.colorBackgroundLight,
+        backgroundColor: context.appBackground,
         elevation: 0,
         title: Text(
           'Recipes',
           style: GoogleFonts.playfairDisplay(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: CookestTokens.colorHeadingLight,
+            color: context.appHeading,
           ),
         ),
         actions: [
@@ -78,6 +79,18 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.small(
+        heroTag: 'pantry-filter',
+        onPressed: () => _showPantryFilterModal(context, ref),
+        tooltip: matchInventory ? 'Showing pantry matches' : 'Filter by pantry',
+        child: Icon(
+          LucideIcons.filter,
+          color: matchInventory ? Colors.white : null,
+        ),
+        backgroundColor: matchInventory
+            ? CookestTokens.colorPrimaryDEFAULT
+            : null,
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -116,13 +129,25 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            CkToggle(
-              value: matchInventory,
-              label: 'Match my pantry',
-              onChanged: (val) {
-                ref.read(recipeMatchInventoryProvider.notifier).state = val;
-              },
-            ),
+            if (matchInventory)
+              CkBadge(
+                variant: CkBadgeVariant.success,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(LucideIcons.checkCircle, size: 14),
+                    const SizedBox(width: 6),
+                    const Text('Showing pantry matches'),
+                    const SizedBox(width: 6),
+                    GestureDetector(
+                      onTap: () {
+                        ref.read(recipeMatchInventoryProvider.notifier).state = false;
+                      },
+                      child: const Icon(LucideIcons.x, size: 14),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 16),
             Expanded(
               child: recipesAsync.when(
@@ -161,7 +186,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                                         .textTheme
                                         .titleSmall
                                         ?.copyWith(
-                                          color: CookestTokens.colorHeadingLight,
+                                          color: context.appHeading,
                                           fontWeight: FontWeight.w600,
                                         ),
                                   ),
@@ -194,6 +219,62 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showPantryFilterModal(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Filter Recipes',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Only show recipes I can make',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                  CkToggle(
+                    value: ref.watch(recipeMatchInventoryProvider),
+                    onChanged: (val) {
+                      ref.read(recipeMatchInventoryProvider.notifier).state = val;
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Shows only recipes where you have most ingredients in pantry',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: context.appMuted),
+              ),
+              const SizedBox(height: 16),
+              CkButton(
+                variant: CkButtonVariant.ghost,
+                fullWidth: true,
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Done'),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:cookest_ui/cookest_ui.dart';
 import '../repositories/recipe_repository.dart';
 
 class CreateRecipeScreen extends ConsumerStatefulWidget {
@@ -12,58 +14,69 @@ class CreateRecipeScreen extends ConsumerStatefulWidget {
 }
 
 class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _timeController = TextEditingController(text: '30');
-  
-  String _difficulty = 'medium';
-  final List<String> _ingredients = [''];
-  final List<String> _instructions = [''];
+  final _prepTimeController = TextEditingController();
+  final _cookTimeController = TextEditingController();
+  final _instructionsController = TextEditingController();
+
+  String _difficulty = 'Easy';
+  final List<TextEditingController> _ingredientControllers = [TextEditingController()];
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _timeController.dispose();
+    _prepTimeController.dispose();
+    _cookTimeController.dispose();
+    _instructionsController.dispose();
+    for (final c in _ingredientControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    
-    // Filter empty lines
-    final validIngredients = _ingredients.where((i) => i.trim().isNotEmpty).toList();
-    final validInstructions = _instructions.where((i) => i.trim().isNotEmpty).toList();
-
-    if (validIngredients.isEmpty || validInstructions.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please add at least one ingredient and instruction.')));
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      setState(() => _errorMessage = 'Recipe name is required.');
       return;
     }
 
-    setState(() => _isLoading = true);
+    final ingredients = _ingredientControllers
+        .map((c) => c.text.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    final instructions = _instructionsController.text
+        .split('\n')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     try {
       await ref.read(recipeRepositoryProvider).createRecipe({
-        'name': _nameController.text.trim(),
+        'name': name,
         'description': _descriptionController.text.trim(),
+        'prep_time': int.tryParse(_prepTimeController.text.trim()) ?? 0,
+        'cook_time': int.tryParse(_cookTimeController.text.trim()) ?? 0,
         'difficulty': _difficulty,
-        'total_time_min': int.parse(_timeController.text),
-        'ingredients': validIngredients,
-        'instructions': validInstructions,
+        'ingredients': ingredients,
+        'instructions': instructions,
       });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recipe created successfully!')));
-        context.pop();
-      }
+      if (mounted) context.pop();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-        if (e.toString().contains('Pro')) {
-          context.push('/paywall');
-        }
+      if (e.toString().contains('Pro')) {
+        if (mounted) context.push('/paywall');
+      } else {
+        setState(() => _errorMessage = e.toString());
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -73,118 +86,143 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: CookestTokens.colorBackgroundLight,
       appBar: AppBar(
-        title: const Text('Create Recipe', style: TextStyle(fontWeight: FontWeight.bold)),
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _submit,
-            child: _isLoading 
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Save', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        backgroundColor: CookestTokens.colorBackgroundLight,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          'Create Recipe',
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: CookestTokens.colorHeadingLight,
           ),
-        ],
+        ),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextFormField(
+            if (_errorMessage != null) ...[
+              CkAlert(
+                variant: CkAlertVariant.error,
+                child: Text(_errorMessage!),
+              ),
+              const SizedBox(height: 16),
+            ],
+            CkInput(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Recipe Name', border: OutlineInputBorder()),
-              validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+              label: 'Recipe Name *',
+              placeholder: 'e.g. Spaghetti Carbonara',
+              fullWidth: true,
             ),
-            const SizedBox(height: 16),
-            TextFormField(
+            const SizedBox(height: 12),
+            CkInput(
               controller: _descriptionController,
-              maxLines: 3,
-              decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()),
+              label: 'Description',
+              placeholder: 'Describe your recipe...',
+              fullWidth: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
-                    controller: _timeController,
+                  child: CkInput(
+                    controller: _prepTimeController,
+                    label: 'Prep Time (min)',
+                    placeholder: '15',
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Time (mins)', border: OutlineInputBorder()),
-                    validator: (v) => v == null || int.tryParse(v) == null ? 'Invalid' : null,
+                    fullWidth: true,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _difficulty,
-                    decoration: const InputDecoration(labelText: 'Difficulty', border: OutlineInputBorder()),
-                    items: const [
-                      DropdownMenuItem(value: 'easy', child: Text('Easy')),
-                      DropdownMenuItem(value: 'medium', child: Text('Medium')),
-                      DropdownMenuItem(value: 'hard', child: Text('Hard')),
-                    ],
-                    onChanged: (v) => setState(() => _difficulty = v!),
+                  child: CkInput(
+                    controller: _cookTimeController,
+                    label: 'Cook Time (min)',
+                    placeholder: '30',
+                    keyboardType: TextInputType.number,
+                    fullWidth: true,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 32),
-            Text('Ingredients', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            ..._ingredients.asMap().entries.map((e) => Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      initialValue: e.value,
-                      decoration: InputDecoration(hintText: 'e.g. 2 cups flour', isDense: true, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                      onChanged: (v) => _ingredients[e.key] = v,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(LucideIcons.minusCircle, color: Colors.red),
-                    onPressed: () => setState(() => _ingredients.removeAt(e.key)),
-                  ),
-                ],
-              ),
-            )),
-            TextButton.icon(
-              onPressed: () => setState(() => _ingredients.add('')),
-              icon: const Icon(LucideIcons.plus),
-              label: const Text('Add Ingredient'),
+            const SizedBox(height: 16),
+            CkSelect(
+              label: 'Difficulty',
+              placeholder: 'Select difficulty',
+              options: ['Easy', 'Medium', 'Hard']
+                  .map((d) => CkSelectOption(value: d, label: d))
+                  .toList(),
+              value: _difficulty,
+              onChanged: (val) => setState(() => _difficulty = val),
             ),
-            const SizedBox(height: 32),
-            Text('Instructions', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            ..._instructions.asMap().entries.map((e) => Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12.0, right: 8.0),
-                    child: Text('${e.key + 1}.', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            Text(
+              'Ingredients',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: CookestTokens.colorHeadingLight,
+                    fontWeight: FontWeight.w600,
                   ),
-                  Expanded(
-                    child: TextFormField(
-                      initialValue: e.value,
-                      maxLines: 2,
-                      decoration: InputDecoration(hintText: 'Step description...', isDense: true, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8))),
-                      onChanged: (v) => _instructions[e.key] = v,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(LucideIcons.minusCircle, color: Colors.red),
-                    onPressed: () => setState(() => _instructions.removeAt(e.key)),
-                  ),
-                ],
-              ),
-            )),
-            TextButton.icon(
-              onPressed: () => setState(() => _instructions.add('')),
-              icon: const Icon(LucideIcons.plus),
-              label: const Text('Add Step'),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 8),
+            Column(
+              children: List.generate(_ingredientControllers.length, (i) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CkInput(
+                          controller: _ingredientControllers[i],
+                          placeholder: 'e.g. 2 cups flour',
+                          fullWidth: true,
+                        ),
+                      ),
+                      if (_ingredientControllers.length > 1)
+                        IconButton(
+                          icon: const Icon(LucideIcons.trash2, size: 18),
+                          onPressed: () {
+                            setState(() {
+                              _ingredientControllers[i].dispose();
+                              _ingredientControllers.removeAt(i);
+                            });
+                          },
+                        ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _ingredientControllers.add(TextEditingController());
+                });
+              },
+              icon: const Icon(LucideIcons.plus, size: 16),
+              label: const Text('Add ingredient'),
+            ),
+            const SizedBox(height: 16),
+            CkTextarea(
+              controller: _instructionsController,
+              label: 'Instructions',
+              placeholder: 'Step by step...',
+              minLines: 5,
+              maxLines: 12,
+            ),
+            const SizedBox(height: 24),
+            CkButton(
+              fullWidth: true,
+              loading: _isLoading,
+              onPressed: _submit,
+              child: const Text('Create Recipe'),
+            ),
           ],
         ),
       ),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cookest_ui/cookest_ui.dart';
+import 'package:cookest/src/core/theme/app_colors.dart';
 import '../../meal_plan/repositories/meal_plan_repository.dart';
 import '../../pantry/repositories/inventory_repository.dart';
 
@@ -16,16 +17,16 @@ class HomeScreen extends ConsumerWidget {
     final expiringCountAsync = ref.watch(expiringCountProvider);
 
     return Scaffold(
-      backgroundColor: CookestTokens.colorBackgroundLight,
+      backgroundColor: context.appBackground,
       appBar: AppBar(
-        backgroundColor: CookestTokens.colorBackgroundLight,
+        backgroundColor: context.appBackground,
         elevation: 0,
         title: Text(
           'Good morning 👋',
           style: GoogleFonts.playfairDisplay(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: CookestTokens.colorHeadingLight,
+            color: context.appHeading,
           ),
         ),
         actions: [
@@ -69,7 +70,7 @@ class HomeScreen extends ConsumerWidget {
               style: GoogleFonts.playfairDisplay(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: CookestTokens.colorHeadingLight,
+                color: context.appHeading,
               ),
             ),
             const SizedBox(height: 12),
@@ -112,7 +113,7 @@ class HomeScreen extends ConsumerWidget {
                                       .textTheme
                                       .labelSmall
                                       ?.copyWith(
-                                        color: CookestTokens.colorMutedLight,
+                                        color: context.appMuted,
                                       ),
                                 ),
                               ],
@@ -124,7 +125,7 @@ class HomeScreen extends ConsumerWidget {
                                   .textTheme
                                   .titleMedium
                                   ?.copyWith(
-                                    color: CookestTokens.colorHeadingLight,
+                                    color: context.appHeading,
                                     fontWeight: FontWeight.w600,
                                   ),
                             ),
@@ -141,7 +142,7 @@ class HomeScreen extends ConsumerWidget {
                 Text(
                   'Quick actions',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: CookestTokens.colorHeadingLight,
+                        color: context.appHeading,
                       ),
                 ),
                 const Spacer(),

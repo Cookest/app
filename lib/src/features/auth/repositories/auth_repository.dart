@@ -33,7 +33,7 @@ class AuthRepository {
 
   Future<void> saveOnboarding(Map<String, dynamic> data) async {
     try {
-      await _dio.post('/api/auth/onboarding', data: data);
+      await _dio.post('/api/me/onboarding', data: data);
     } on DioException catch (e) {
       throw e.response?.data['error'] ?? 'Failed to save onboarding';
     }

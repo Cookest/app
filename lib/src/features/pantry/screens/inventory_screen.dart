@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:cookest_ui/cookest_ui.dart';
 import '../repositories/inventory_repository.dart';
 import '../models/inventory_item.dart';
-import '../../../shared/theme/shadcn_theme.dart';
 
 class InventoryScreen extends ConsumerStatefulWidget {
   const InventoryScreen({super.key});
@@ -15,7 +15,6 @@ class InventoryScreen extends ConsumerStatefulWidget {
 }
 
 class _InventoryScreenState extends ConsumerState<InventoryScreen> {
-  final Set<String> _expandedSections = {'fridge', 'pantry', 'freezer', 'other'};
   final _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -37,73 +36,85 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            backgroundColor: AppTheme.surface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Text('Add Item', style: GoogleFonts.playfairDisplay(fontSize: 20, color: AppTheme.darkGreen)),
+            backgroundColor: CookestTokens.colorSurfaceLight,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(
+              'Add Item',
+              style: GoogleFonts.playfairDisplay(
+                  fontSize: 20, color: CookestTokens.colorHeadingLight),
+            ),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(
+                  CkInput(
                     controller: nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Item Name',
-                      labelStyle: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
-                    ),
+                    label: 'Item Name',
+                    placeholder: 'e.g. Milk',
+                    fullWidth: true,
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
-                        child: TextField(
+                        child: CkInput(
                           controller: quantityController,
-                          decoration: InputDecoration(
-                            labelText: 'Quantity',
-                            labelStyle: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
-                          ),
+                          label: 'Quantity',
+                          placeholder: '1',
                           keyboardType: TextInputType.number,
+                          fullWidth: true,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: TextField(
+                        child: CkInput(
                           controller: unitController,
-                          decoration: InputDecoration(
-                            labelText: 'Unit',
-                            labelStyle: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
-                          ),
+                          label: 'Unit',
+                          placeholder: 'pcs',
+                          fullWidth: true,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
+                  CkSelect(
+                    label: 'Location',
+                    placeholder: 'Select location',
+                    options: ['fridge', 'pantry', 'freezer']
+                        .map((loc) => CkSelectOption(
+                              value: loc,
+                              label: loc[0].toUpperCase() + loc.substring(1),
+                            ))
+                        .toList(),
                     value: location,
-                    decoration: InputDecoration(
-                      labelText: 'Location',
-                      labelStyle: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
-                    ),
-                    items: ['fridge', 'pantry', 'freezer'].map((loc) {
-                      return DropdownMenuItem(value: loc, child: Text(loc[0].toUpperCase() + loc.substring(1)));
-                    }).toList(),
-                    onChanged: (v) => setDialogState(() => location = v!),
+                    onChanged: (v) => setDialogState(() => location = v),
                   ),
                   const SizedBox(height: 12),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(
-                      expiryDate == null ? 'Set Expiry Date' : 'Expires: ${DateFormat.yMd().format(expiryDate!)}',
-                      style: GoogleFonts.inter(fontSize: 14, color: AppTheme.darkGreen),
+                      expiryDate == null
+                          ? 'Set Expiry Date'
+                          : 'Expires: ${DateFormat.yMd().format(expiryDate!)}',
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: CookestTokens.colorHeadingLight),
                     ),
-                    trailing: const Icon(LucideIcons.calendar, color: AppTheme.sage),
+                    trailing: Icon(LucideIcons.calendar,
+                        color: CookestTokens.colorPrimaryDEFAULT),
                     onTap: () async {
                       final date = await showDatePicker(
                         context: context,
-                        initialDate: DateTime.now().add(const Duration(days: 7)),
+                        initialDate:
+                            DateTime.now().add(const Duration(days: 7)),
                         firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                        lastDate:
+                            DateTime.now().add(const Duration(days: 365)),
                       );
-                      if (date != null) setDialogState(() => expiryDate = date);
+                      if (date != null) {
+                        setDialogState(() => expiryDate = date);
+                      }
                     },
                   ),
                 ],
@@ -112,23 +123,26 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('Cancel', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.textMuted)),
+                child: Text('Cancel',
+                    style: TextStyle(color: CookestTokens.colorMutedLight)),
               ),
-              ElevatedButton(
+              CkButton(
                 onPressed: () async {
                   if (nameController.text.isEmpty) return;
                   await ref.read(inventoryRepositoryProvider).addItem({
                     'name': nameController.text,
-                    'quantity': double.tryParse(quantityController.text) ?? 1.0,
+                    'quantity':
+                        double.tryParse(quantityController.text) ?? 1.0,
                     'unit': unitController.text,
                     'location': location,
-                    if (expiryDate != null) 'expiry_date': expiryDate!.toIso8601String(),
+                    if (expiryDate != null)
+                      'expiry_date': expiryDate!.toIso8601String(),
                   });
                   ref.invalidate(inventoryListProvider);
                   ref.invalidate(expiringCountProvider);
                   if (context.mounted) Navigator.pop(context);
                 },
-                child: Text('Add', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500)),
+                child: const Text('Add'),
               ),
             ],
           );
@@ -140,159 +154,170 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
   @override
   Widget build(BuildContext context) {
     final inventoryAsync = ref.watch(inventoryListProvider);
+    final expiringCountAsync = ref.watch(expiringCountProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: CookestTokens.colorBackgroundLight,
       appBar: AppBar(
-        backgroundColor: AppTheme.background,
+        backgroundColor: CookestTokens.colorBackgroundLight,
         elevation: 0,
         title: Text(
           'Pantry',
-          style: GoogleFonts.playfairDisplay(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.darkGreen),
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: CookestTokens.colorHeadingLight,
+          ),
         ),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search items',
-                prefixIcon: const Icon(LucideIcons.search, size: 18, color: AppTheme.textCaption),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppTheme.border)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppTheme.border)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppTheme.sage, width: 1.5)),
-                filled: true,
-                fillColor: AppTheme.surface,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                hintStyle: GoogleFonts.inter(fontSize: 14, color: AppTheme.textCaption),
-              ),
-              onChanged: (v) => setState(() => _searchQuery = v),
-            ),
-          ),
-          Expanded(
-            child: inventoryAsync.when(
-              data: (items) {
-                final filtered = _searchQuery.isEmpty
-                    ? items
-                    : items.where((i) => i.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
-
-                if (filtered.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(LucideIcons.packageOpen, size: 48, color: AppTheme.textCaption),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No items found',
-                          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: AppTheme.darkGreen),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Add items using the + button',
-                          style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final groups = <String, List<InventoryItem>>{};
-                for (final item in filtered) {
-                  groups.putIfAbsent(item.location, () => []).add(item);
-                }
-
-                final groupList = groups.entries.toList();
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  itemCount: groupList.length,
-                  itemBuilder: (context, index) =>
-                      _buildSection(groupList[index].key, groupList[index].value),
-                );
-              },
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: AppTheme.sage, strokeWidth: 2.5),
-              ),
-              error: (e, _) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(LucideIcons.alertCircle, size: 48, color: AppTheme.textCaption),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Something went wrong',
-                      style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w500, color: AppTheme.darkGreen),
-                    ),
-                    const SizedBox(height: 4),
-                    TextButton(
-                      onPressed: () => ref.invalidate(inventoryListProvider),
-                      child: Text('Retry', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.sage)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddItemDialog,
-        backgroundColor: AppTheme.sage,
-        foregroundColor: AppTheme.surface,
+        backgroundColor: CookestTokens.colorPrimaryDEFAULT,
+        foregroundColor: Colors.white,
         elevation: 2,
         child: const Icon(LucideIcons.plus),
       ),
-    );
-  }
-
-  Widget _buildSection(String location, List<InventoryItem> items) {
-    final isExpanded = _expandedSections.contains(location);
-    final label = location[0].toUpperCase() + location.substring(1);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GestureDetector(
-          onTap: () => setState(() {
-            if (isExpanded) {
-              _expandedSections.remove(location);
-            } else {
-              _expandedSections.add(location);
-            }
-          }),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Row(
-              children: [
-                Text(
-                  label,
-                  style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.darkGreen),
-                ),
-                const Spacer(),
-                Icon(
-                  isExpanded ? LucideIcons.chevronDown : LucideIcons.chevronRight,
-                  size: 18,
-                  color: AppTheme.textMuted,
-                ),
-              ],
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            CkInput(
+              controller: _searchController,
+              placeholder: 'Search items...',
+              iconLeft: const Icon(LucideIcons.search, size: 16),
+              fullWidth: true,
+              onChanged: (v) => setState(() => _searchQuery = v),
             ),
-          ),
+            const SizedBox(height: 12),
+            expiringCountAsync.maybeWhen(
+              data: (count) => count > 0
+                  ? Column(
+                      children: [
+                        CkAlert(
+                          variant: CkAlertVariant.warning,
+                          title: 'Expiring soon',
+                          child: Text(
+                              '$count item(s) expire within 3 days'),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+              orElse: () => const SizedBox.shrink(),
+            ),
+            Expanded(
+              child: inventoryAsync.when(
+                loading: () => const Column(
+                  children: [
+                    CkSkeletonCard(),
+                    SizedBox(height: 12),
+                    CkSkeletonCard(),
+                    SizedBox(height: 12),
+                    CkSkeletonCard(),
+                  ],
+                ),
+                error: (e, _) => CkAlert(
+                  variant: CkAlertVariant.error,
+                  child: Text('Failed to load inventory: $e'),
+                ),
+                data: (items) {
+                  final filtered = _searchQuery.isEmpty
+                      ? items
+                      : items
+                          .where((i) => i.name
+                              .toLowerCase()
+                              .contains(_searchQuery.toLowerCase()))
+                          .toList();
+
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(LucideIcons.packageOpen,
+                              size: 48, color: CookestTokens.colorMutedLight),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No items found',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                    color: CookestTokens.colorHeadingLight),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Add items using the + button',
+                            style: TextStyle(
+                                color: CookestTokens.colorMutedLight),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final groups = <String, List<InventoryItem>>{};
+                  for (final item in filtered) {
+                    groups.putIfAbsent(item.location, () => []).add(item);
+                  }
+
+                  return ListView(
+                    children: groups.entries.map((entry) {
+                      final label = entry.key[0].toUpperCase() +
+                          entry.key.substring(1);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 10),
+                            child: Text(
+                              label,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(
+                                    color: CookestTokens.colorHeadingLight,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ),
+                          ...entry.value.map((item) =>
+                              _buildItemRow(item)),
+                          Divider(color: CookestTokens.colorBorderLight),
+                          const SizedBox(height: 4),
+                        ],
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
-        if (isExpanded) ...items.map((item) => _buildItemRow(item)),
-        const Divider(color: AppTheme.divider),
-        const SizedBox(height: 4),
-      ],
+      ),
     );
   }
 
   Widget _buildItemRow(InventoryItem item) {
     final now = DateTime.now();
-    final daysUntilExpiry = item.expiryDate != null ? item.expiryDate!.difference(now).inDays : null;
-    final isExpiringSoon = daysUntilExpiry != null && daysUntilExpiry <= 5 && daysUntilExpiry >= 0;
-    final isExpiredToday = daysUntilExpiry != null && daysUntilExpiry <= 1;
+    final daysUntilExpiry = item.expiryDate?.difference(now).inDays;
     final isExpired = daysUntilExpiry != null && daysUntilExpiry < 0;
+    final isExpiringSoon =
+        daysUntilExpiry != null && daysUntilExpiry >= 0 && daysUntilExpiry <= 5;
+
+    final badgeVariant = isExpired
+        ? CkBadgeVariant.error
+        : isExpiringSoon
+            ? CkBadgeVariant.warning
+            : CkBadgeVariant.success;
+
+    final statusLabel = isExpired
+        ? 'Expired'
+        : isExpiringSoon
+            ? 'Expiring'
+            : 'Fresh';
 
     return Dismissible(
       key: Key(item.id),
@@ -301,7 +326,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: AppTheme.destructive,
+          color: CookestTokens.colorStatusError,
           borderRadius: BorderRadius.circular(10),
         ),
         child: const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
@@ -311,50 +336,49 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
         ref.invalidate(inventoryListProvider);
         ref.invalidate(expiringCountProvider);
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: (isExpiredToday && !isExpired) ? AppTheme.amberVeryLight : AppTheme.surface,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            if (isExpiringSoon || isExpired)
-              Container(
-                width: 6,
-                height: 6,
-                margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  color: isExpired ? AppTheme.destructive : AppTheme.amber,
-                  shape: BoxShape.circle,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: CkCard(
+          padding: CkCardPadding.sm,
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: CookestTokens.colorHeadingLight,
+                      ),
+                    ),
+                    Text(
+                      '${item.quantity} ${item.unit}',
+                      style: TextStyle(
+                          fontSize: 13, color: CookestTokens.colorMutedLight),
+                    ),
+                  ],
                 ),
               ),
-            Expanded(
-              child: Text(
-                item.name,
-                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.darkGreen),
-              ),
-            ),
-            Text(
-              '${item.quantity} ${item.unit}',
-              style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
-            ),
-            if (item.expiryDate != null) ...[
-              const SizedBox(width: 12),
-              Text(
-                DateFormat.MMMd().format(item.expiryDate!),
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: isExpired ? AppTheme.destructive : (isExpiringSoon ? AppTheme.amber : AppTheme.textMuted),
-                  fontWeight: isExpiringSoon || isExpired ? FontWeight.w500 : FontWeight.w400,
+              if (item.expiryDate != null) ...[
+                const SizedBox(width: 8),
+                Text(
+                  DateFormat.MMMd().format(item.expiryDate!),
+                  style: TextStyle(
+                      fontSize: 13, color: CookestTokens.colorMutedLight),
                 ),
+              ],
+              const SizedBox(width: 8),
+              CkBadge(
+                variant: badgeVariant,
+                size: CkBadgeSize.sm,
+                child: Text(statusLabel),
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 }
-

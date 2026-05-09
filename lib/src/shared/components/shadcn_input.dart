@@ -36,7 +36,7 @@ class ShadcnInput extends StatelessWidget {
             label!,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.darkGreen,
+                  color: AppTheme.darkGreen(context),
                 ),
           ),
           const SizedBox(height: 6),

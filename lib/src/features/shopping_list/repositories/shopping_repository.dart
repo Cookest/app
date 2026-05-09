@@ -19,7 +19,10 @@ class ShoppingRepository {
     } else {
       items = [];
     }
-    return items.map((i) => ShoppingItem.fromJson(i as Map<String, dynamic>)).toList();
+    return items
+        .whereType<Map>()
+        .map((i) => ShoppingItem.fromJson(Map<String, dynamic>.from(i)))
+        .toList();
   }
 
   Future<void> syncFromPlan() async {

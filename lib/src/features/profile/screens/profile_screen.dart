@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:cookest_ui/cookest_ui.dart';
 import '../repositories/profile_repository.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
+
+  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+    
+    ref.read(authProvider.notifier).logout();
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -14,160 +21,141 @@ class ProfileScreen extends ConsumerWidget {
     final subscriptionAsync = ref.watch(subscriptionProvider);
 
     return Scaffold(
+      backgroundColor: CookestTokens.colorBackgroundLight,
       appBar: AppBar(
-        title: const Text('Profile & Settings', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: CookestTokens.colorBackgroundLight,
         elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(height: 24),
-            _buildProfileHeader(profileAsync),
-            const SizedBox(height: 32),
-            _buildSubscriptionCard(context, subscriptionAsync),
-            const SizedBox(height: 32),
-            _buildSettingsList(context, ref),
-          ],
+        title: Text(
+          'Profile',
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: CookestTokens.colorHeadingLight,
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildProfileHeader(AsyncValue profileAsync) {
-    return profileAsync.when(
-      data: (profile) => Column(
-        children: [
-          const CircleAvatar(
-            radius: 50,
-            backgroundColor: Colors.green,
-            child: Icon(LucideIcons.user, size: 50, color: Colors.white),
+      body: profileAsync.when(
+        loading: () => const Center(child: CkSpinner()),
+        error: (e, _) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: CkAlert(
+            variant: CkAlertVariant.error,
+            child: Text('Failed to load profile: $e'),
           ),
-          const SizedBox(height: 16),
-          Text(profile.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(profile.email, style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
-        ],
-      ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
-    );
-  }
-
-  Widget _buildSubscriptionCard(BuildContext context, AsyncValue subAsync) {
-    return subAsync.when(
-      data: (sub) {
-        final isPro = sub.tier == 'pro' || sub.tier == 'family';
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isPro ? [Colors.purple.shade700, Colors.deepPurple.shade900] : [Colors.grey.shade200, Colors.grey.shade300],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: isPro ? [BoxShadow(color: Colors.purple.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : [],
-          ),
-          child: Row(
+        ),
+        data: (profile) => SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
+          child: Column(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isPro ? 'Pro Member' : 'Free Tier',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isPro ? Colors.white : Colors.black87,
+              Center(
+                child: CkAvatar(
+                  alt: profile.name,
+                  size: CkAvatarSize.xl,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Center(
+                child: Text(
+                  profile.name,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: CookestTokens.colorHeadingLight,
+                        fontWeight: FontWeight.w600,
                       ),
+                ),
+              ),
+              Center(
+                child: Text(
+                  profile.email,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: CookestTokens.colorMutedLight,
+                      ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              subscriptionAsync.maybeWhen(
+                data: (sub) {
+                  final isPro = sub.tier == 'pro' || sub.tier == 'family';
+                  return Center(
+                    child: CkBadge(
+                      variant: isPro
+                          ? CkBadgeVariant.success
+                          : CkBadgeVariant.standard,
+                      child: Text(sub.tier.toUpperCase()),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      isPro ? 'Thank you for supporting Cookest!' : 'Upgrade to Pro for unlimited features.',
-                      style: TextStyle(
-                        color: isPro ? Colors.white70 : Colors.grey.shade700,
-                      ),
+                  );
+                },
+                orElse: () => const SizedBox.shrink(),
+              ),
+              const SizedBox(height: 24),
+              CkCard(
+                padding: CkCardPadding.md,
+                child: Column(
+                  children: [
+                    _buildSettingsRow(
+                      context,
+                      icon: LucideIcons.user,
+                      label: 'Edit Profile',
+                      onTap: () {},
+                    ),
+                    Divider(color: CookestTokens.colorBorderLight, height: 1),
+                    _buildSettingsRow(
+                      context,
+                      icon: LucideIcons.bell,
+                      label: 'Notifications',
+                      onTap: () {},
+                    ),
+                    Divider(color: CookestTokens.colorBorderLight, height: 1),
+                    _buildSettingsRow(
+                      context,
+                      icon: LucideIcons.crown,
+                      label: 'Upgrade',
+                      onTap: () => context.push('/paywall'),
                     ),
                   ],
                 ),
               ),
-              if (!isPro)
-                ElevatedButton(
-                  onPressed: () => context.push('/paywall'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purple,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  ),
-                  child: const Text('Upgrade'),
-                ),
+              const SizedBox(height: 16),
+              CkButton(
+                variant: CkButtonVariant.danger,
+                fullWidth: true,
+                onPressed: () => _logout(context, ref),
+                child: const Text('Sign out'),
+              ),
             ],
           ),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const SizedBox(),
+        ),
+      ),
     );
   }
 
-  Widget _buildSettingsList(BuildContext context, WidgetRef ref) {
-    return Column(
-      children: [
-        _buildListTile(
-          icon: LucideIcons.bell,
-          title: 'Push Notifications',
-          onTap: () {},
-        ),
-        _buildListTile(
-          icon: LucideIcons.refreshCcw,
-          title: 'Reset Taste Preferences',
-          subtitle: 'Clears AI learned preferences',
-          onTap: () async {
-            try {
-              await ref.read(profileRepositoryProvider).resetTastePreferences();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preferences reset successfully.')));
-              }
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-              }
-            }
-          },
-        ),
-        _buildListTile(
-          icon: LucideIcons.lock,
-          title: 'Change Password',
-          onTap: () {},
-        ),
-        const Divider(),
-        _buildListTile(
-          icon: LucideIcons.logOut,
-          title: 'Logout',
-          textColor: Colors.red,
-          onTap: () {
-            ref.read(authProvider.notifier).logout();
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildListTile({
+  Widget _buildSettingsRow(
+    BuildContext context, {
     required IconData icon,
-    required String title,
-    String? subtitle,
-    Color? textColor,
+    required String label,
     required VoidCallback onTap,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: textColor ?? Colors.grey.shade700),
-      title: Text(title, style: TextStyle(color: textColor ?? Colors.black87, fontWeight: FontWeight.w500)),
-      subtitle: subtitle != null ? Text(subtitle) : null,
-      trailing: const Icon(LucideIcons.chevronRight, size: 16),
+    return InkWell(
       onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: CookestTokens.colorMutedLight),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: CookestTokens.colorHeadingLight,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Icon(LucideIcons.chevronRight,
+                size: 16, color: CookestTokens.colorMutedLight),
+          ],
+        ),
+      ),
     );
   }
 }

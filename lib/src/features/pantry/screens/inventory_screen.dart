@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:cookest_ui/cookest_ui.dart';
+import 'package:cookest/src/core/theme/app_colors.dart';
 import '../repositories/inventory_repository.dart';
 import '../models/inventory_item.dart';
 
@@ -36,13 +37,13 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            backgroundColor: CookestTokens.colorSurfaceLight,
+            backgroundColor: context.appSurface,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Text(
               'Add Item',
               style: GoogleFonts.playfairDisplay(
-                  fontSize: 20, color: CookestTokens.colorHeadingLight),
+                  fontSize: 20, color: context.appHeading),
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -99,7 +100,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                           : 'Expires: ${DateFormat.yMd().format(expiryDate!)}',
                       style: TextStyle(
                           fontSize: 14,
-                          color: CookestTokens.colorHeadingLight),
+                          color: context.appHeading),
                     ),
                     trailing: Icon(LucideIcons.calendar,
                         color: CookestTokens.colorPrimaryDEFAULT),
@@ -124,7 +125,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text('Cancel',
-                    style: TextStyle(color: CookestTokens.colorMutedLight)),
+                    style: TextStyle(color: context.appMuted)),
               ),
               CkButton(
                 onPressed: () async {
@@ -157,16 +158,16 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
     final expiringCountAsync = ref.watch(expiringCountProvider);
 
     return Scaffold(
-      backgroundColor: CookestTokens.colorBackgroundLight,
+      backgroundColor: context.appBackground,
       appBar: AppBar(
-        backgroundColor: CookestTokens.colorBackgroundLight,
+        backgroundColor: context.appBackground,
         elevation: 0,
         title: Text(
           'Pantry',
           style: GoogleFonts.playfairDisplay(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: CookestTokens.colorHeadingLight,
+            color: context.appHeading,
           ),
         ),
       ),
@@ -236,7 +237,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(LucideIcons.packageOpen,
-                              size: 48, color: CookestTokens.colorMutedLight),
+                              size: 48, color: context.appMuted),
                           const SizedBox(height: 12),
                           Text(
                             'No items found',
@@ -244,13 +245,13 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                                 .textTheme
                                 .titleMedium
                                 ?.copyWith(
-                                    color: CookestTokens.colorHeadingLight),
+                                    color: context.appHeading),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Add items using the + button',
                             style: TextStyle(
-                                color: CookestTokens.colorMutedLight),
+                                color: context.appMuted),
                           ),
                         ],
                       ),
@@ -278,14 +279,14 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                                   .textTheme
                                   .titleSmall
                                   ?.copyWith(
-                                    color: CookestTokens.colorHeadingLight,
+                                    color: context.appHeading,
                                     fontWeight: FontWeight.w600,
                                   ),
                             ),
                           ),
                           ...entry.value.map((item) =>
                               _buildItemRow(item)),
-                          Divider(color: CookestTokens.colorBorderLight),
+                          Divider(color: context.appBorder),
                           const SizedBox(height: 4),
                         ],
                       );
@@ -350,13 +351,13 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                       item.name,
                       style: TextStyle(
                         fontWeight: FontWeight.w500,
-                        color: CookestTokens.colorHeadingLight,
+                        color: context.appHeading,
                       ),
                     ),
                     Text(
                       '${item.quantity} ${item.unit}',
                       style: TextStyle(
-                          fontSize: 13, color: CookestTokens.colorMutedLight),
+                          fontSize: 13, color: context.appMuted),
                     ),
                   ],
                 ),
@@ -366,7 +367,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                 Text(
                   DateFormat.MMMd().format(item.expiryDate!),
                   style: TextStyle(
-                      fontSize: 13, color: CookestTokens.colorMutedLight),
+                      fontSize: 13, color: context.appMuted),
                 ),
               ],
               const SizedBox(width: 8),

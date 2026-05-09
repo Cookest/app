@@ -73,6 +73,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
+  cookest_ui:
+    dependency: "direct main"
+    description:
+      path: "../cookest-ui-components-library/flutter"
+      relative: true
+    source: path
+    version: "0.1.0"
   cookie_jar:
     dependency: "direct main"
     description:

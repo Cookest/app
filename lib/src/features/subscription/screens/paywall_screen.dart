@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:dio/dio.dart';
 import 'package:cookest_ui/cookest_ui.dart';
+import 'package:cookest/src/core/theme/app_colors.dart';
 import '../../../core/api/api_client.dart';
 
 class PaywallScreen extends ConsumerStatefulWidget {
@@ -49,7 +50,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CookestTokens.colorBackgroundLight,
+      backgroundColor: context.appBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -75,7 +76,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: CookestTokens.colorHeadingLight,
+                  color: context.appHeading,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -84,7 +85,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 'Unlimited AI chat, price comparison, recipe creation, and more.',
                 style: GoogleFonts.inter(
                   fontSize: 15,
-                  color: CookestTokens.colorMutedLight,
+                  color: context.appMuted,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -136,7 +137,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.inter(fontSize: 15, color: CookestTokens.colorHeadingLight),
+              style: GoogleFonts.inter(fontSize: 15, color: context.appHeading),
             ),
           ),
         ],
@@ -188,7 +189,7 @@ class _TierCard extends StatelessWidget {
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: CookestTokens.colorHeadingLight,
+                  color: context.appHeading,
                 ),
               ),
               RichText(
@@ -198,14 +199,14 @@ class _TierCard extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: CookestTokens.colorHeadingLight,
+                      color: context.appHeading,
                     ),
                   ),
                   TextSpan(
                     text: period,
                     style: GoogleFonts.inter(
                       fontSize: 13,
-                      color: CookestTokens.colorMutedLight,
+                      color: context.appMuted,
                     ),
                   ),
                 ]),
@@ -215,7 +216,7 @@ class _TierCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             description,
-            style: GoogleFonts.inter(fontSize: 14, color: CookestTokens.colorMutedLight),
+            style: GoogleFonts.inter(fontSize: 14, color: context.appMuted),
           ),
           const SizedBox(height: 16),
           CkButton(

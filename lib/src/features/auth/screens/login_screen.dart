@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cookest_ui/cookest_ui.dart';
+import 'package:cookest/src/core/theme/app_colors.dart';
+import '../../../core/storage/secure_storage.dart';
 import '../providers/auth_provider.dart';
 import '../repositories/auth_repository.dart';
 
@@ -18,6 +20,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _rememberMe = true;
   String? _errorMessage;
 
   @override
@@ -38,6 +41,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       final token = await ref.read(authRepositoryProvider).login(email, password);
       ref.read(authProvider.notifier).setToken(token);
+      await SecureStorage.setRememberMe(_rememberMe);
+      if (_rememberMe) {
+        await SecureStorage.saveAccessToken(token);
+      } else {
+        await SecureStorage.clearTokens();
+      }
+      if (!mounted) return;
+      context.go('/');
     } catch (e) {
       setState(() { _errorMessage = e.toString(); _isLoading = false; });
     }
@@ -46,7 +57,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.appSurface,
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 64, 24, 32),
         child: Column(
@@ -59,14 +70,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               style: GoogleFonts.playfairDisplay(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: CookestTokens.colorHeadingLight,
+                color: context.appHeading,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               'Sign in to your Cookest account',
-              style: GoogleFonts.inter(fontSize: 16, color: CookestTokens.colorMutedLight),
+              style: GoogleFonts.inter(fontSize: 16, color: context.appMuted),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
@@ -97,6 +108,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               obscureText: true,
               fullWidth: true,
             ),
+            const SizedBox(height: 8),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _rememberMe,
+              onChanged: (value) =>
+                  setState(() => _rememberMe = value ?? false),
+              controlAffinity: ListTileControlAffinity.leading,
+              title: Text(
+                'Remember me',
+                style: GoogleFonts.inter(color: context.appMuted),
+              ),
+            ),
             const SizedBox(height: 24),
             CkButton(
               onPressed: _submit,
@@ -122,4 +145,3 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 }
-

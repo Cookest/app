@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:cookest_ui/cookest_ui.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/splash_screen.dart';
 import '../features/auth/screens/login_screen.dart';
@@ -18,7 +19,6 @@ import '../features/chat/screens/chat_screen.dart';
 import '../features/subscription/screens/paywall_screen.dart';
 import '../features/recipes/screens/recipe_detail_screen.dart';
 import '../features/recipes/screens/create_recipe_screen.dart';
-import '../shared/theme/shadcn_theme.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -90,12 +90,16 @@ class _AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? CookestTokens.colorSurfaceDark : CookestTokens.colorSurfaceLight;
+    final borderColor = isDark ? CookestTokens.colorBorderDark : CookestTokens.colorBorderLight;
+
     return Scaffold(
       body: child,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppTheme.surface,
-          border: Border(top: BorderSide(color: AppTheme.divider, width: 1)),
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          border: Border(top: BorderSide(color: borderColor)),
         ),
         child: SafeArea(
           top: false,
@@ -120,7 +124,9 @@ class _AppShell extends StatelessWidget {
                             tab.icon,
                             key: ValueKey(isActive),
                             size: 22,
-                            color: isActive ? AppTheme.sage : AppTheme.textCaption,
+                            color: isActive
+                                ? CookestTokens.colorPrimaryDEFAULT
+                                : CookestTokens.colorMutedLight,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -129,7 +135,9 @@ class _AppShell extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.w400,
-                            color: isActive ? AppTheme.sage : AppTheme.textCaption,
+                            color: isActive
+                                ? CookestTokens.colorPrimaryDEFAULT
+                                : CookestTokens.colorMutedLight,
                           ),
                           child: Text(tab.label),
                         ),
@@ -145,3 +153,4 @@ class _AppShell extends StatelessWidget {
     );
   }
 }
+

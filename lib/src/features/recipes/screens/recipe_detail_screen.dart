@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cookest_ui/cookest_ui.dart';
+import 'package:cookest/src/core/theme/app_colors.dart';
 import '../repositories/recipe_repository.dart';
 import '../models/recipe.dart';
 
@@ -26,7 +27,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: CookestTokens.colorSurfaceLight,
+      backgroundColor: context.appSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -42,7 +43,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: CookestTokens.colorBorderLight,
+                    color: context.appBorder,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -53,14 +54,14 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: CookestTokens.colorHeadingLight,
+                  color: context.appHeading,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
                 recipe.name,
                 style: Theme.of(ctx).textTheme.bodyLarge?.copyWith(
-                      color: CookestTokens.colorMutedLight,
+                      color: context.appMuted,
                     ),
               ),
             ],
@@ -75,9 +76,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     final recipeAsync = ref.watch(recipeDetailProvider(widget.recipeId));
 
     return Scaffold(
-      backgroundColor: CookestTokens.colorBackgroundLight,
+      backgroundColor: context.appBackground,
       appBar: AppBar(
-        backgroundColor: CookestTokens.colorBackgroundLight,
+        backgroundColor: context.appBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft),
@@ -89,7 +90,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
             style: GoogleFonts.playfairDisplay(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: CookestTokens.colorHeadingLight,
+              color: context.appHeading,
             ),
           ),
           orElse: () => const SizedBox.shrink(),
@@ -100,7 +101,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
               _isFavorite ? LucideIcons.heart : LucideIcons.heart,
               color: _isFavorite
                   ? CookestTokens.colorStatusError
-                  : CookestTokens.colorMutedLight,
+                  : context.appMuted,
             ),
             onPressed: () => setState(() => _isFavorite = !_isFavorite),
           ),
@@ -147,7 +148,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                     Text(
                       'Ingredients',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: CookestTokens.colorHeadingLight,
+                            color: context.appHeading,
                             fontWeight: FontWeight.w600,
                           ),
                     ),
@@ -184,7 +185,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                     Text(
                       'Instructions',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: CookestTokens.colorHeadingLight,
+                            color: context.appHeading,
                             fontWeight: FontWeight.w600,
                           ),
                     ),

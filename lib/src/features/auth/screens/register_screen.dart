@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import '../repositories/auth_repository.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:cookest_ui/cookest_ui.dart';
 import '../providers/auth_provider.dart';
+import '../repositories/auth_repository.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -13,7 +15,6 @@ class RegisterScreen extends ConsumerStatefulWidget {
 }
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -28,126 +29,111 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
+  Future<void> _submit() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Please fill in all fields.');
+      return;
+    }
+    if (password.length < 8) {
+      setState(() => _errorMessage = 'Password must be at least 8 characters.');
+      return;
+    }
+    setState(() { _isLoading = true; _errorMessage = null; });
     try {
-      await ref.read(authRepositoryProvider).register(
-        _emailController.text,
-        _passwordController.text,
-        _nameController.text,
-      );
-      
-      // Auto-login after register
-      final token = await ref.read(authRepositoryProvider).login(
-        _emailController.text,
-        _passwordController.text,
-      );
+      await ref.read(authRepositoryProvider).register(email, password, name);
+      final token = await ref.read(authRepositoryProvider).login(email, password);
       ref.read(authProvider.notifier).setToken(token);
-      
       if (mounted) context.go('/onboarding');
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
+      setState(() { _errorMessage = e.toString(); _isLoading = false; });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 64, 24, 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Icon(LucideIcons.chefHat, size: 48, color: CookestTokens.colorPrimaryDEFAULT),
+            const SizedBox(height: 16),
+            Text(
+              'Create account',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: CookestTokens.colorHeadingLight,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Join thousands of home cooks',
+              style: GoogleFonts.inter(fontSize: 16, color: CookestTokens.colorMutedLight),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 40),
+            if (_errorMessage != null) ...[
+              CkAlert(
+                variant: CkAlertVariant.error,
+                title: 'Sign in failed',
+                dismissible: true,
+                onDismiss: () => setState(() => _errorMessage = null),
+                child: Text(_errorMessage!),
+              ),
+              const SizedBox(height: 16),
+            ],
+            CkInput(
+              controller: _nameController,
+              label: 'Name',
+              placeholder: 'Your full name',
+              iconLeft: const Icon(LucideIcons.user, size: 16),
+              fullWidth: true,
+            ),
+            const SizedBox(height: 16),
+            CkInput(
+              controller: _emailController,
+              label: 'Email',
+              placeholder: 'you@example.com',
+              iconLeft: const Icon(LucideIcons.mail, size: 16),
+              keyboardType: TextInputType.emailAddress,
+              fullWidth: true,
+            ),
+            const SizedBox(height: 16),
+            CkInput(
+              controller: _passwordController,
+              label: 'Password',
+              placeholder: '••••••••',
+              iconLeft: const Icon(LucideIcons.lock, size: 16),
+              obscureText: true,
+              fullWidth: true,
+            ),
+            const SizedBox(height: 24),
+            CkButton(
+              onPressed: _submit,
+              loading: _isLoading,
+              fullWidth: true,
+              size: CkButtonSize.lg,
+              child: const Text('Create account'),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  'Create Account',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade900,
-                  ),
-                  textAlign: TextAlign.center,
-                ).animate().fadeIn(),
-                const SizedBox(height: 8),
-                Text(
-                  'Start your journey to better meal planning',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
-                  textAlign: TextAlign.center,
-                ).animate().fadeIn(delay: 200.ms),
-                const SizedBox(height: 32),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Full Name',
-                    prefixIcon: Icon(Icons.person_outline),
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) => value?.isEmpty ?? true ? 'Enter your name' : null,
-                ).animate().slideX(begin: -0.1, delay: 300.ms).fadeIn(),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) => value?.isEmpty ?? true ? 'Enter your email' : null,
-                ).animate().slideX(begin: 0.1, delay: 400.ms).fadeIn(),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock_outline),
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                  validator: (value) => (value?.length ?? 0) < 6 ? 'Password must be at least 6 characters' : null,
-                ).animate().slideX(begin: -0.1, delay: 500.ms).fadeIn(),
-                if (_errorMessage != null) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    _errorMessage!,
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _register,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Register', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ).animate().scale(delay: 600.ms),
-                const SizedBox(height: 16),
+                const Text('Already have an account? '),
                 TextButton(
                   onPressed: () => context.pop(),
-                  child: const Text('Already have an account? Login'),
+                  child: const Text('Sign in'),
                 ),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );

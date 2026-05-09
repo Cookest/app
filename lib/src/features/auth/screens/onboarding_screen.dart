@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cookest_ui/cookest_ui.dart';
+import 'package:cookest/src/core/theme/app_colors.dart';
 import '../repositories/auth_repository.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -16,6 +17,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _pageController = PageController();
   int _currentPage = 0;
   bool _isLoading = false;
+  String? _errorMessage;
 
   final Set<String> _dietaryRestrictions = {};
   String _cookingSkill = 'intermediate';
@@ -26,17 +28,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     try {
       await ref.read(authRepositoryProvider).saveOnboarding({
         'dietary_restrictions': _dietaryRestrictions.toList(),
-        'cooking_skill': _cookingSkill,
+        'cooking_skill_level': _cookingSkill,
         'household_size': _householdSize.round(),
         'allergies': [],
         'health_goals': [],
-        'diet_type': 'none',
-        'available_time_minutes': 30,
-        'energy_level': 'medium',
+        'preferred_cuisines': [],
+        'preferred_time_per_meal_min': 30,
       });
       if (mounted) context.go('/');
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _errorMessage = e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -61,7 +68,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Step ${_currentPage + 1} of 3',
-                      style: GoogleFonts.inter(fontSize: 14, color: CookestTokens.colorMutedLight)),
+                      style: GoogleFonts.inter(fontSize: 14, color: context.appMuted)),
                   TextButton(onPressed: () => context.go('/'), child: const Text('Skip')),
                 ],
               ),
@@ -73,6 +80,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 children: [_buildPage0(), _buildPage1(), _buildPage2()],
               ),
             ),
+            if (_errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+                child: CkAlert(
+                  variant: CkAlertVariant.error,
+                  dismissible: true,
+                  onDismiss: () => setState(() => _errorMessage = null),
+                  child: Text(_errorMessage!),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
               child: Row(
@@ -115,7 +132,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               style: GoogleFonts.playfairDisplay(fontSize: 28, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text('Select all that apply',
-              style: GoogleFonts.inter(fontSize: 14, color: CookestTokens.colorMutedLight)),
+              style: GoogleFonts.inter(fontSize: 14, color: context.appMuted)),
           const SizedBox(height: 24),
           ...options.map((opt) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -143,7 +160,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               style: GoogleFonts.playfairDisplay(fontSize: 28, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text('How experienced are you?',
-              style: GoogleFonts.inter(fontSize: 14, color: CookestTokens.colorMutedLight)),
+              style: GoogleFonts.inter(fontSize: 14, color: context.appMuted)),
           const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
@@ -175,7 +192,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               style: GoogleFonts.playfairDisplay(fontSize: 28, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text('Including yourself',
-              style: GoogleFonts.inter(fontSize: 14, color: CookestTokens.colorMutedLight)),
+              style: GoogleFonts.inter(fontSize: 14, color: context.appMuted)),
           const SizedBox(height: 24),
           CkSlider(
             value: _householdSize,

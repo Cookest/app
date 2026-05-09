@@ -1,22 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:cookest_ui/cookest_ui.dart';
 import '../../meal_plan/repositories/meal_plan_repository.dart';
-import '../../meal_plan/models/meal_plan.dart';
 import '../../pantry/repositories/inventory_repository.dart';
-import '../../../shared/theme/shadcn_theme.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
-
-  String _greeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,343 +16,207 @@ class HomeScreen extends ConsumerWidget {
     final expiringCountAsync = ref.watch(expiringCountProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 24),
-              _buildHeader(context),
-              const SizedBox(height: 28),
-              _buildSectionLabel(context, 'What\'s cooking right now?', showViewAll: true, onViewAll: () => context.go('/meals')),
-              const SizedBox(height: 16),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 350),
-                transitionBuilder: (child, animation) =>
-                    FadeTransition(opacity: animation, child: child),
-                child: mealPlanAsync.when(
-                  data: (plan) => KeyedSubtree(
-                    key: const ValueKey('featured-loaded'),
-                    child: _buildFeaturedCard(context, plan),
-                  ),
-                  loading: () => KeyedSubtree(
-                    key: const ValueKey('featured-loading'),
-                    child: _buildFeaturedCardPlaceholder(),
-                  ),
-                  error: (_, _) => KeyedSubtree(
-                    key: const ValueKey('featured-error'),
-                    child: _buildFeaturedCardPlaceholder(),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (child, animation) =>
-                    FadeTransition(opacity: animation, child: child),
-                child: expiringCountAsync.when(
-                  data: (count) => count > 0
-                      ? KeyedSubtree(
-                          key: ValueKey('alert-$count'),
-                          child: _buildAlertStrip(context, count),
-                        )
-                      : const SizedBox.shrink(key: ValueKey('alert-none')),
-                  loading: () => const SizedBox.shrink(key: ValueKey('alert-loading')),
-                  error: (_, _) => const SizedBox.shrink(key: ValueKey('alert-error')),
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildHostingRow(context),
-              const SizedBox(height: 40),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Text(
-            '${_greeting()}, Chef',
-            style: GoogleFonts.playfairDisplay(
-              fontSize: 26,
-              fontWeight: FontWeight.normal,
-              color: AppTheme.darkGreen,
-            ),
-          ),
-        ),
-        GestureDetector(
-          onTap: () => context.push('/profile'),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              color: AppTheme.sage,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                'C',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.surface,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionLabel(BuildContext context, String label, {bool showViewAll = false, VoidCallback? onViewAll}) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: [
-        Text(
-          label,
+      backgroundColor: CookestTokens.colorBackgroundLight,
+      appBar: AppBar(
+        backgroundColor: CookestTokens.colorBackgroundLight,
+        elevation: 0,
+        title: Text(
+          'Good morning 👋',
           style: GoogleFonts.playfairDisplay(
-            fontSize: 18,
-            fontWeight: FontWeight.normal,
-            color: AppTheme.darkGreen,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: CookestTokens.colorHeadingLight,
           ),
         ),
-        if (showViewAll) ...[
-          const Spacer(),
+        actions: [
           GestureDetector(
-            onTap: onViewAll,
-            child: Text(
-              'View all',
-              style: GoogleFonts.inter(fontSize: 13, color: AppTheme.sage),
+            onTap: () => context.push('/profile'),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: CkAvatar(alt: 'User', size: CkAvatarSize.sm),
             ),
+          ),
+          IconButton(
+            icon: const Icon(LucideIcons.messageCircle),
+            onPressed: () => context.push('/chat'),
           ),
         ],
-      ],
-    );
-  }
-
-  Widget _buildFeaturedCard(BuildContext context, MealPlan? plan) {
-    final today = DateTime.now().weekday - 1;
-    MealSlot? featuredSlot;
-    if (plan != null) {
-      final todaySlots = plan.slots.where((s) => s.dayOfWeek == today && s.recipe != null).toList();
-      if (todaySlots.isNotEmpty) featuredSlot = todaySlots.first;
-    }
-
-    return _PressableContainer(
-      onTap: featuredSlot?.recipe != null
-          ? () => context.push('/recipes/${featuredSlot!.recipe!.id}')
-          : () => context.go('/meals'),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [AppTheme.cardShadow],
-        ),
-        clipBehavior: Clip.antiAlias,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 180,
-              width: double.infinity,
-              color: const Color(0xFFE8F0E4),
-              child: Center(
-                child: Icon(LucideIcons.utensils, size: 48, color: AppTheme.sage.withValues(alpha: 0.4)),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    featuredSlot?.recipe?.name ?? 'No recipe planned today',
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 18,
-                      fontWeight: FontWeight.normal,
-                      color: AppTheme.darkGreen,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(LucideIcons.clock, size: 14, color: AppTheme.textMuted),
-                      const SizedBox(width: 4),
-                      Text(
-                        featuredSlot?.recipe != null ? '${featuredSlot!.recipe!.totalTimeMin} mins' : '—',
-                        style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted),
-                      ),
-                      const SizedBox(width: 12),
-                      const Icon(LucideIcons.star, size: 14, color: AppTheme.textMuted),
-                      const SizedBox(width: 4),
-                      Text('4.0', style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted)),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: featuredSlot?.recipe != null
-                              ? () => context.push('/recipes/${featuredSlot!.recipe!.id}')
-                              : () => context.go('/meals'),
-                          child: Text('Cook it!', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500)),
+            expiringCountAsync.maybeWhen(
+              data: (count) => count > 0
+                  ? Column(
+                      children: [
+                        CkAlert(
+                          variant: CkAlertVariant.warning,
+                          title: 'Pantry alert',
+                          dismissible: false,
+                          icon: const Icon(LucideIcons.alertTriangle, size: 16),
+                          child: Text('$count item(s) expiring soon'),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      TextButton(
-                        onPressed: featuredSlot?.recipe != null
-                            ? () => context.push('/recipes/${featuredSlot!.recipe!.id}')
-                            : () => context.go('/meals'),
-                        style: TextButton.styleFrom(foregroundColor: AppTheme.sage),
-                        child: Text('View details', style: GoogleFonts.inter(fontSize: 14, color: AppTheme.sage)),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(height: 16),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+              orElse: () => const SizedBox.shrink(),
+            ),
+            Text(
+              "Today's meal",
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: CookestTokens.colorHeadingLight,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeaturedCardPlaceholder() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [AppTheme.cardShadow],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          Container(
-            height: 180,
-            width: double.infinity,
-            color: const Color(0xFFE8F0E4),
-            child: Center(
-              child: Icon(LucideIcons.utensils, size: 48, color: AppTheme.sage.withValues(alpha: 0.4)),
+            const SizedBox(height: 12),
+            mealPlanAsync.when(
+              loading: () => const CkSkeletonCard(),
+              error: (e, _) => CkAlert(
+                variant: CkAlertVariant.error,
+                child: Text('Failed to load meal plan: $e'),
+              ),
+              data: (mealPlan) {
+                if (mealPlan == null) {
+                  return CkCard(
+                    variant: CkCardVariant.interactive,
+                    padding: CkCardPadding.md,
+                    child: const Center(child: Text('No meal planned')),
+                  );
+                }
+                final dayOfWeek = DateTime.now().weekday - 1;
+                final dinner = mealPlan.slots
+                    .where((s) =>
+                        s.dayOfWeek == dayOfWeek && s.mealType == 'dinner')
+                    .firstOrNull;
+                return CkCard(
+                  variant: CkCardVariant.interactive,
+                  padding: CkCardPadding.md,
+                  onTap: dinner?.recipe != null
+                      ? () => context.push('/recipes/${dinner!.recipe!.id}')
+                      : null,
+                  child: dinner?.recipe != null
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(LucideIcons.utensils, size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Dinner',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .labelSmall
+                                      ?.copyWith(
+                                        color: CookestTokens.colorMutedLight,
+                                      ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              dinner!.recipe!.name,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    color: CookestTokens.colorHeadingLight,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ],
+                        )
+                      : const Center(
+                          child: Text('No meal planned for tonight')),
+                );
+              },
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 24),
+            Row(
               children: [
                 Text(
-                  'No recipe planned today',
-                  style: GoogleFonts.playfairDisplay(fontSize: 18, color: AppTheme.darkGreen),
+                  'Quick actions',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: CookestTokens.colorHeadingLight,
+                      ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Set up your meal plan to see today\'s recipe here.',
-                  style: GoogleFonts.inter(fontSize: 13, color: AppTheme.textMuted, height: 1.5),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: null,
-                  child: Text('Cook it!', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500)),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => context.push('/recipes'),
+                  child: const Text('View all'),
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAlertStrip(BuildContext context, int count) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppTheme.amberLight,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(LucideIcons.alertTriangle, size: 16, color: AppTheme.amber),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '$count item${count == 1 ? '' : 's'} expiring soon',
-              style: GoogleFonts.inter(fontSize: 13, color: AppTheme.amber),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: CkCard(
+                    variant: CkCardVariant.interactive,
+                    padding: CkCardPadding.sm,
+                    onTap: () => context.push('/recipes'),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(LucideIcons.search, size: 24),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Find Recipe',
+                          style: Theme.of(context).textTheme.labelMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: CkCard(
+                    variant: CkCardVariant.interactive,
+                    padding: CkCardPadding.sm,
+                    onTap: () => context.push('/meals'),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(LucideIcons.calendar, size: 24),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Meal Plan',
+                          style: Theme.of(context).textTheme.labelMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: CkCard(
+                    variant: CkCardVariant.interactive,
+                    padding: CkCardPadding.sm,
+                    onTap: () => context.push('/groceries'),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(LucideIcons.shoppingCart, size: 24),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Groceries',
+                          style: Theme.of(context).textTheme.labelMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          GestureDetector(
-            onTap: () => context.go('/pantry'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppTheme.amber,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Use it',
-                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHostingRow(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            'Hosting a meal?',
-            style: GoogleFonts.inter(fontSize: 15, color: AppTheme.darkGreen),
-          ),
+          ],
         ),
-        OutlinedButton(
-          onPressed: () => context.go('/meals'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppTheme.sage,
-            side: const BorderSide(color: AppTheme.sage),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          ),
-          child: Text('Plan it', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.sage)),
-        ),
-      ],
-    );
-  }
-}
-
-class _PressableContainer extends StatefulWidget {
-  final Widget child;
-  final VoidCallback? onTap;
-  const _PressableContainer({required this.child, this.onTap});
-
-  @override
-  State<_PressableContainer> createState() => _PressableContainerState();
-}
-
-class _PressableContainerState extends State<_PressableContainer> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        child: widget.child,
       ),
     );
   }

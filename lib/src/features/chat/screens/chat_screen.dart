@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cookest_ui/cookest_ui.dart';
+import 'package:cookest/src/core/theme/app_colors.dart';
 
 import '../repositories/chat_repository.dart';
 import '../models/chat_message.dart';
@@ -87,17 +88,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final messages = ref.watch(chatMessagesProvider);
 
     return Scaffold(
-      backgroundColor: CookestTokens.colorBackgroundLight,
+      backgroundColor: context.appBackground,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        backgroundColor: CookestTokens.colorBackgroundLight,
+        backgroundColor: context.appBackground,
         elevation: 0,
         title: Text(
           'Cookest AI',
           style: GoogleFonts.playfairDisplay(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: CookestTokens.colorHeadingLight,
+            color: context.appHeading,
           ),
         ),
       ),
@@ -150,9 +151,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           Container(
             decoration: BoxDecoration(
-              color: CookestTokens.colorSurfaceLight,
+              color: context.appSurface,
               border: Border(
-                top: BorderSide(color: CookestTokens.colorBorderLight),
+                top: BorderSide(color: context.appBorder),
               ),
             ),
             padding: EdgeInsets.fromLTRB(

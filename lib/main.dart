@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cookest_ui/cookest_ui.dart';
 import 'src/core/router.dart';
-import 'src/shared/theme/shadcn_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +22,9 @@ class CookestApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Cookest',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: CookestTheme.light,
+      darkTheme: CookestTheme.dark,
+      themeMode: ThemeMode.system,
       routerConfig: router,
     );
   }

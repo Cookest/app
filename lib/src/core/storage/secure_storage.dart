@@ -7,6 +7,7 @@ class SecureStorage {
 
   static const _accessKey = 'access_token';
   static const _refreshKey = 'refresh_token';
+  static const _rememberMeKey = 'remember_me';
 
   static Future<void> saveTokens({
     required String accessToken,
@@ -28,6 +29,22 @@ class SecureStorage {
     await Future.wait([
       _storage.delete(key: _accessKey),
       _storage.delete(key: _refreshKey),
+    ]);
+  }
+
+  static Future<void> saveAccessToken(String accessToken) =>
+      _storage.write(key: _accessKey, value: accessToken);
+
+  static Future<void> setRememberMe(bool rememberMe) =>
+      _storage.write(key: _rememberMeKey, value: rememberMe ? 'true' : 'false');
+
+  static Future<bool> getRememberMe() async =>
+      (await _storage.read(key: _rememberMeKey)) == 'true';
+
+  static Future<void> clearAuthState() async {
+    await Future.wait([
+      clearTokens(),
+      _storage.delete(key: _rememberMeKey),
     ]);
   }
 }

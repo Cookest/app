@@ -15,6 +15,7 @@ import '../features/meal_plan/screens/meal_plan_screen.dart';
 import '../features/pantry/screens/inventory_screen.dart';
 import '../features/shopping_list/screens/shopping_list_screen.dart';
 import '../features/profile/screens/profile_screen.dart';
+import '../features/profile/screens/settings_screen.dart';
 import '../features/chat/screens/chat_screen.dart';
 import '../features/subscription/screens/paywall_screen.dart';
 import '../features/recipes/screens/recipe_detail_screen.dart';
@@ -24,12 +25,11 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
-
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: '/splash',
     navigatorKey: _rootNavigatorKey,
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
       final isAuthenticated = authState.isAuthenticated;
       final isLoggingIn = state.matchedLocation == '/login' || state.matchedLocation == '/register';
       final isSplash = state.matchedLocation == '/splash';
@@ -49,6 +49,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
       GoRoute(path: '/paywall', builder: (context, state) => const PaywallScreen()),
       GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
+      GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => _AppShell(location: state.matchedLocation, child: child),
@@ -62,6 +63,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  ref.listen(authProvider, (previous, next) => router.refresh());
+  return router;
 });
 
 class _AppShell extends StatelessWidget {
@@ -124,9 +128,11 @@ class _AppShell extends StatelessWidget {
                             tab.icon,
                             key: ValueKey(isActive),
                             size: 22,
-                            color: isActive
-                                ? CookestTokens.colorPrimaryDEFAULT
-                                : CookestTokens.colorMutedLight,
+                             color: isActive
+                                 ? CookestTokens.colorPrimaryDEFAULT
+                                 : (isDark
+                                     ? CookestTokens.colorMutedDark
+                                     : CookestTokens.colorMutedLight),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -135,9 +141,11 @@ class _AppShell extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.w400,
-                            color: isActive
-                                ? CookestTokens.colorPrimaryDEFAULT
-                                : CookestTokens.colorMutedLight,
+                             color: isActive
+                                 ? CookestTokens.colorPrimaryDEFAULT
+                                 : (isDark
+                                     ? CookestTokens.colorMutedDark
+                                     : CookestTokens.colorMutedLight),
                           ),
                           child: Text(tab.label),
                         ),
@@ -153,4 +161,3 @@ class _AppShell extends StatelessWidget {
     );
   }
 }
-

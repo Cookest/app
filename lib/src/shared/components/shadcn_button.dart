@@ -33,7 +33,7 @@ class ShadcnButton extends StatelessWidget {
             onPressed: isLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.sage,
-              foregroundColor: AppTheme.surface,
+              foregroundColor: AppTheme.surface(context),
             ),
             child: _buildContent(),
           ),
@@ -49,15 +49,15 @@ class ShadcnButton extends StatelessWidget {
             onPressed: isLoading ? null : onPressed,
             style: OutlinedButton.styleFrom(
               backgroundColor: Colors.transparent,
-              side: const BorderSide(color: AppTheme.border),
+              side: BorderSide(color: AppTheme.border(context)),
             ),
             child: _buildContent(),
           ),
         ShadcnButtonVariant.secondary => ElevatedButton(
             onPressed: isLoading ? null : onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.divider,
-              foregroundColor: AppTheme.darkGreen,
+              backgroundColor: AppTheme.divider(context),
+              foregroundColor: AppTheme.darkGreen(context),
               elevation: 0,
             ),
             child: _buildContent(),
@@ -65,7 +65,7 @@ class ShadcnButton extends StatelessWidget {
         ShadcnButtonVariant.ghost => TextButton(
             onPressed: isLoading ? null : onPressed,
             style: TextButton.styleFrom(
-              foregroundColor: AppTheme.darkGreen,
+              foregroundColor: AppTheme.darkGreen(context),
             ),
             child: _buildContent(),
           ),

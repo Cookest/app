@@ -35,16 +35,16 @@ class AppShell extends StatelessWidget {
     return Scaffold(
       body: child,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppTheme.surface,
-          border: Border(top: BorderSide(color: AppTheme.divider, width: 1)),
+        decoration: BoxDecoration(
+          color: AppTheme.surface(context),
+          border: Border(top: BorderSide(color: AppTheme.divider(context), width: 1)),
         ),
         child: BottomNavigationBar(
           currentIndex: currentIndex,
           type: BottomNavigationBarType.fixed,
-          backgroundColor: AppTheme.surface,
+          backgroundColor: AppTheme.surface(context),
           selectedItemColor: AppTheme.sage,
-          unselectedItemColor: AppTheme.textCaption,
+          unselectedItemColor: AppTheme.textCaption(context),
           selectedFontSize: 10,
           unselectedFontSize: 10,
           elevation: 0,

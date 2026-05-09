@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cookest_ui/cookest_ui.dart';
+import 'package:cookest/src/core/theme/app_colors.dart';
 import '../repositories/recipe_repository.dart';
 
 class CreateRecipeScreen extends ConsumerStatefulWidget {
@@ -86,9 +87,9 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CookestTokens.colorBackgroundLight,
+      backgroundColor: context.appBackground,
       appBar: AppBar(
-        backgroundColor: CookestTokens.colorBackgroundLight,
+        backgroundColor: context.appBackground,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft),
@@ -99,7 +100,7 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
           style: GoogleFonts.playfairDisplay(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: CookestTokens.colorHeadingLight,
+            color: context.appHeading,
           ),
         ),
       ),
@@ -166,7 +167,7 @@ class _CreateRecipeScreenState extends ConsumerState<CreateRecipeScreen> {
             Text(
               'Ingredients',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: CookestTokens.colorHeadingLight,
+                    color: context.appHeading,
                     fontWeight: FontWeight.w600,
                   ),
             ),

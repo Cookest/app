@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:cookest_ui/cookest_ui.dart';
 import '../../../core/api/api_client.dart';
-import '../../../core/services/push_notification_service.dart';
 import '../providers/auth_provider.dart';
+import '../../../core/services/push_notification_service.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -22,15 +25,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Future<void> _checkAuth() async {
     final dio = ref.read(dioProvider);
     try {
-      // Attempt to refresh token on startup
       final response = await dio.post('/api/auth/refresh');
       final token = response.data['access_token'];
       if (token != null) {
         ref.read(authProvider.notifier).setToken(token);
-        
-        // Initialize push notifications
         ref.read(pushNotificationServiceProvider).initializeAndRegisterToken();
-        
         if (mounted) context.go('/');
       } else {
         if (mounted) context.go('/login');
@@ -45,22 +44,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     return Scaffold(
       body: Container(
         width: double.infinity,
-        color: Theme.of(context).colorScheme.primary,
+        color: CookestTokens.colorPrimaryDEFAULT,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.restaurant, size: 80, color: Colors.white),
+            const Icon(LucideIcons.chefHat, size: 72, color: Colors.white),
             const SizedBox(height: 24),
             Text(
               'Cookest',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: Colors.white,
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 40,
                 fontWeight: FontWeight.bold,
-                letterSpacing: 2.0,
+                color: Colors.white,
               ),
             ),
-            const SizedBox(height: 48),
-            const CircularProgressIndicator(color: Colors.white),
+            const SizedBox(height: 8),
+            Text(
+              'Cook smarter, eat better',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: Colors.white.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 64),
+            const CkSpinner(color: CkSpinnerColor.white, size: CkSpinnerSize.lg),
           ],
         ),
       ),

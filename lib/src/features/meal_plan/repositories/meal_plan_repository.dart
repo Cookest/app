@@ -20,7 +20,18 @@ class MealPlanRepository {
   }
 
   Future<void> generatePlan() async {
-    await _dio.post('/api/meal-plans/generate', data: {});
+    final now = DateTime.now();
+    final monday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - DateTime.monday));
+    final weekStart =
+        '${monday.year.toString().padLeft(4, '0')}-${monday.month.toString().padLeft(2, '0')}-${monday.day.toString().padLeft(2, '0')}';
+
+    await _dio.post('/api/meal-plans/generate', data: {
+      'week_start': weekStart,
+    });
   }
 
   Future<void> completeSlot(String planId, String slotId) async {

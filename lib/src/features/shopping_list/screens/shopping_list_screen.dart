@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:cookest_ui/cookest_ui.dart';
+import 'package:cookest/src/core/theme/app_colors.dart';
 import '../repositories/shopping_repository.dart';
 import '../models/shopping_item.dart';
 
@@ -55,16 +56,16 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
     final listAsync = ref.watch(shoppingListProvider);
 
     return Scaffold(
-      backgroundColor: CookestTokens.colorBackgroundLight,
+      backgroundColor: context.appBackground,
       appBar: AppBar(
-        backgroundColor: CookestTokens.colorBackgroundLight,
+        backgroundColor: context.appBackground,
         elevation: 0,
         title: Text(
           'Groceries',
           style: GoogleFonts.playfairDisplay(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: CookestTokens.colorHeadingLight,
+            color: context.appHeading,
           ),
         ),
         actions: [
@@ -73,6 +74,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
             child: CkButton(
               variant: CkButtonVariant.ghost,
               size: CkButtonSize.sm,
+              iconLeft: const Icon(LucideIcons.refreshCcw, size: 16),
               onPressed: _sync,
               child: const Text('Sync'),
             ),
@@ -84,21 +86,19 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
         child: Column(
           children: [
             const SizedBox(height: 12),
-            Row(
+            Column(
               children: [
-                Expanded(
-                  child: CkInput(
-                    controller: _addItemController,
-                    placeholder: 'Add item...',
-                    fullWidth: true,
-                    onSubmitted: (_) => _addItem(),
-                  ),
+                CkInput(
+                  controller: _addItemController,
+                  placeholder: 'Add item...',
+                  fullWidth: true,
+                  onSubmitted: (_) => _addItem(),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(height: 8),
                 CkButton(
-                  size: CkButtonSize.sm,
+                  fullWidth: true,
                   onPressed: _addItem,
-                  child: const Text('Add'),
+                  child: const Text('Add to Groceries'),
                 ),
               ],
             ),
@@ -125,7 +125,7 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(LucideIcons.shoppingCart,
-                              size: 48, color: CookestTokens.colorMutedLight),
+                              size: 48, color: context.appMuted),
                           const SizedBox(height: 12),
                           Text(
                             'Your shopping list is empty',
@@ -133,13 +133,13 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                 .textTheme
                                 .titleMedium
                                 ?.copyWith(
-                                    color: CookestTokens.colorHeadingLight),
+                                    color: context.appHeading),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Add items or sync from your meal plan',
                             style: TextStyle(
-                                color: CookestTokens.colorMutedLight),
+                                color: context.appMuted),
                           ),
                           const SizedBox(height: 8),
                           TextButton(

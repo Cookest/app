@@ -28,8 +28,8 @@ class RecipeRepository {
     final List items;
     if (data is List) {
       items = data;
-    } else if (data is Map && data['items'] is List) {
-      items = data['items'] as List;
+    } else if (data is Map && data['data'] is List) {
+      items = data['data'] as List;
     } else {
       items = [];
     }

@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +10,8 @@ import 'package:cookest/src/core/theme/app_colors.dart';
 import '../repositories/meal_plan_repository.dart';
 import '../models/meal_plan.dart';
 import '../../shopping_list/repositories/shopping_repository.dart';
+import '../../recipes/repositories/recipe_repository.dart';
+import '../../recipes/models/recipe.dart';
 
 // ─ State providers (memoized) ────────────────────────────────────────────────
 final selectedDayProvider = StateProvider<int>((ref) => DateTime.now().weekday - 1);
@@ -256,7 +260,7 @@ class _MealPeriodCard extends ConsumerWidget {
         const SizedBox(height: 10),
         slot.recipe != null
             ? _MealCardContent(slot: slot, plan: plan)
-            : const _EmptyMealCard(),
+            : _EmptyMealCard(plan: plan, slot: slot),
         const SizedBox(height: 4),
         Divider(color: context.appBorder),
         const SizedBox(height: 16),
@@ -372,6 +376,14 @@ class _MealCardContent extends ConsumerWidget {
                           : () => _setFlex(context, ref),
                       child: const Text('Flex'),
                     ),
+                    CkButton(
+                      size: CkButtonSize.sm,
+                      variant: CkButtonVariant.ghost,
+                      iconLeft: const Icon(LucideIcons.repeat2, size: 14),
+                      onPressed: () =>
+                          _showRecipePickerSheet(context, ref, plan, slot),
+                      child: const Text('Change'),
+                    ),
                   ],
                 ),
               ],
@@ -430,13 +442,29 @@ class _MealCardContent extends ConsumerWidget {
   }
 }
 
-class _EmptyMealCard extends StatelessWidget {
-  const _EmptyMealCard();
+Future<void> _showRecipePickerSheet(
+    BuildContext context, WidgetRef ref, MealPlan plan, MealSlot slot) async {
+  await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: context.appSurface,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (ctx) => _RecipePickerSheet(plan: plan, slot: slot),
+  );
+}
+
+class _EmptyMealCard extends ConsumerWidget {
+  final MealPlan plan;
+  final MealSlot slot;
+
+  const _EmptyMealCard({required this.plan, required this.slot});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onTap: () => context.push('/recipes'),
+      onTap: () => _showRecipePickerSheet(context, ref, plan, slot),
       child: DottedBorderBox(
         child: Center(
           child: Row(
@@ -446,8 +474,7 @@ class _EmptyMealCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 'Add Meal',
-                style: TextStyle(
-                    fontSize: 14, color: context.appMuted),
+                style: TextStyle(fontSize: 14, color: context.appMuted),
               ),
             ],
           ),
@@ -504,4 +531,251 @@ class _DashedBorderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _RecipePickerSheet extends ConsumerStatefulWidget {
+  final MealPlan plan;
+  final MealSlot slot;
+
+  const _RecipePickerSheet({required this.plan, required this.slot});
+
+  @override
+  ConsumerState<_RecipePickerSheet> createState() =>
+      _RecipePickerSheetState();
+}
+
+class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
+  Timer? _debounce;
+  String _searchQuery = '';
+  List<Recipe> _recipes = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecipes();
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadRecipes({String? q}) async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final recipes = await ref
+          .read(recipeRepositoryProvider)
+          .getRecipes(q: q?.isEmpty == true ? null : q);
+      if (mounted) setState(() { _recipes = recipes; _loading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  void _onSearchChanged(String value) {
+    _searchQuery = value;
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 350), () {
+      if (_searchQuery == value) {
+        _loadRecipes(q: value);
+      }
+    });
+  }
+
+  Future<void> _selectRecipe(BuildContext context, Recipe recipe) async {
+    try {
+      await ref.read(mealPlanRepositoryProvider).swapRecipe(
+            widget.plan.id,
+            widget.slot.id,
+            recipe.id,
+          );
+      ref.invalidate(currentMealPlanProvider);
+      if (context.mounted) Navigator.pop(context);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to assign recipe: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      maxChildSize: 0.95,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (ctx, scrollController) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 4),
+            child: Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: context.appBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Text(
+              'Choose a Recipe',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: context.appHeading,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: CkInput(
+              placeholder: 'Search recipes...',
+              iconLeft: const Icon(LucideIcons.search, size: 16),
+              fullWidth: true,
+              onChanged: _onSearchChanged,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: _loading
+                ? const Center(child: CkSpinner())
+                : _error != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: CkAlert(
+                            variant: CkAlertVariant.error,
+                            child: Text(_error!),
+                          ),
+                        ),
+                      )
+                    : _recipes.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No recipes found',
+                              style: TextStyle(color: context.appMuted),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: scrollController,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 4),
+                            itemCount: _recipes.length,
+                            itemBuilder: (_, i) {
+                              final recipe = _recipes[i];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: CkCard(
+                                  variant: CkCardVariant.interactive,
+                                  padding: CkCardPadding.sm,
+                                  onTap: () =>
+                                      _selectRecipe(context, recipe),
+                                  child: Row(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(6),
+                                        child: recipe.primaryImageUrl !=
+                                                null
+                                            ? CachedNetworkImage(
+                                                imageUrl:
+                                                    recipe.primaryImageUrl!,
+                                                width: 56,
+                                                height: 56,
+                                                fit: BoxFit.cover,
+                                                errorWidget: (_, __, ___) =>
+                                                    Container(
+                                                  width: 56,
+                                                  height: 56,
+                                                  color: context.appSurface,
+                                                  child: Icon(
+                                                      LucideIcons.utensils,
+                                                      size: 20,
+                                                      color:
+                                                          context.appMuted),
+                                                ),
+                                              )
+                                            : Container(
+                                                width: 56,
+                                                height: 56,
+                                                color: context.appSurface,
+                                                child: Icon(
+                                                    LucideIcons.utensils,
+                                                    size: 20,
+                                                    color: context.appMuted),
+                                              ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              recipe.name,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleSmall
+                                                  ?.copyWith(
+                                                    color: context.appHeading,
+                                                    fontWeight:
+                                                        FontWeight.w500,
+                                                  ),
+                                              maxLines: 2,
+                                              overflow:
+                                                  TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(children: [
+                                              if (recipe.totalTimeMin !=
+                                                  null) ...[
+                                                Icon(LucideIcons.clock,
+                                                    size: 12,
+                                                    color: context.appMuted),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                    '${recipe.totalTimeMin} min',
+                                                    style: TextStyle(
+                                                        fontSize: 12,
+                                                        color:
+                                                            context.appMuted)),
+                                                const SizedBox(width: 8),
+                                              ],
+                                              if (recipe.category != null)
+                                                Text(recipe.category!,
+                                                    style: TextStyle(
+                                                        fontSize: 12,
+                                                        color:
+                                                            context.appMuted)),
+                                            ]),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(LucideIcons.chevronRight,
+                                          size: 14, color: context.appMuted),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+          ),
+        ],
+      ),
+    );
+  }
 }

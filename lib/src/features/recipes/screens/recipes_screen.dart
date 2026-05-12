@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -176,6 +177,38 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                         onTap: () => context.push('/recipes/${recipe.id}'),
                         child: Row(
                           children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: recipe.primaryImageUrl != null
+                                  ? CachedNetworkImage(
+                                      imageUrl: recipe.primaryImageUrl!,
+                                      width: 72,
+                                      height: 72,
+                                      fit: BoxFit.cover,
+                                      placeholder: (_, __) => Container(
+                                        width: 72,
+                                        height: 72,
+                                        color: context.appSurface,
+                                        child: Icon(LucideIcons.utensils,
+                                            size: 24, color: context.appMuted),
+                                      ),
+                                      errorWidget: (_, __, ___) => Container(
+                                        width: 72,
+                                        height: 72,
+                                        color: context.appSurface,
+                                        child: Icon(LucideIcons.utensils,
+                                            size: 24, color: context.appMuted),
+                                      ),
+                                    )
+                                  : Container(
+                                      width: 72,
+                                      height: 72,
+                                      color: context.appSurface,
+                                      child: Icon(LucideIcons.utensils,
+                                          size: 24, color: context.appMuted),
+                                    ),
+                            ),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,7 +235,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                                       CkBadge(
                                         variant: CkBadgeVariant.standard,
                                         size: CkBadgeSize.sm,
-                                        child: Text('${recipe.totalTimeMin} min'),
+                                        child: Text(recipe.totalTimeMin != null ? '\${recipe.totalTimeMin} min' : recipe.difficulty ?? 'easy'),
                                       ),
                                     ],
                                   ),

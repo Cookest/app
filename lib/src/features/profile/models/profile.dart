@@ -24,7 +24,7 @@ class UserProfile {
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
-    final name = json['name']?.toString()?.trim();
+    final name = json['name']?.toString().trim();
     return UserProfile(
       id: json['id']?.toString() ?? '',
       email: json['email']?.toString() ?? '',

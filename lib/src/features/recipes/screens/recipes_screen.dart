@@ -85,13 +85,13 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         heroTag: 'pantry-filter',
         onPressed: () => _showPantryFilterModal(context, ref),
         tooltip: matchInventory ? 'Showing pantry matches' : 'Filter by pantry',
+        backgroundColor: matchInventory
+            ? CookestTokens.colorPrimaryDEFAULT
+            : null,
         child: Icon(
           LucideIcons.filter,
           color: matchInventory ? Colors.white : null,
         ),
-        backgroundColor: matchInventory
-            ? CookestTokens.colorPrimaryDEFAULT
-            : null,
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -185,14 +185,14 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                                       width: 72,
                                       height: 72,
                                       fit: BoxFit.cover,
-                                      placeholder: (_, __) => Container(
+                                      placeholder: (ctx, url) => Container(
                                         width: 72,
                                         height: 72,
                                         color: context.appSurface,
                                         child: Icon(LucideIcons.utensils,
                                             size: 24, color: context.appMuted),
                                       ),
-                                      errorWidget: (_, __, ___) => Container(
+                                      errorWidget: (ctx, url, err) => Container(
                                         width: 72,
                                         height: 72,
                                         color: context.appSurface,

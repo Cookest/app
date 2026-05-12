@@ -697,7 +697,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                                                 width: 56,
                                                 height: 56,
                                                 fit: BoxFit.cover,
-                                                errorWidget: (_, __, ___) =>
+                                                errorWidget: (ctx, url, err) =>
                                                     Container(
                                                   width: 56,
                                                   height: 56,

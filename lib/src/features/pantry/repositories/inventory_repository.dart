@@ -19,11 +19,14 @@ class InventoryRepository {
     } else {
       items = [];
     }
-    return items.map((i) => InventoryItem.fromJson(i as Map<String, dynamic>)).toList();
+    return items
+        .map((i) => InventoryItem.fromJson(i as Map<String, dynamic>))
+        .toList();
   }
 
-  Future<void> addItem(Map<String, dynamic> data) async {
-    await _dio.post('/api/inventory', data: data);
+  Future<InventoryItem> addItem(Map<String, dynamic> data) async {
+    final response = await _dio.post('/api/inventory/quick', data: data);
+    return InventoryItem.fromJson(response.data as Map<String, dynamic>);
   }
 
   Future<void> updateItem(String id, Map<String, dynamic> data) async {
@@ -39,11 +42,76 @@ class InventoryRepository {
       final response = await _dio.get('/api/inventory/expiring');
       final data = response.data;
       if (data is List) return data.length;
-      if (data is Map && data['items'] is List) return (data['items'] as List).length;
+      if (data is Map && data['items'] is List) {
+        return (data['items'] as List).length;
+      }
       return 0;
     } catch (_) {
       return 0;
     }
+  }
+
+  Future<List<IngredientSuggestion>> searchIngredients(String query) async {
+    if (query.trim().isEmpty) return [];
+    final response = await _dio.get(
+      '/api/ingredients',
+      queryParameters: {'q': query.trim(), 'per_page': 10},
+    );
+    final data = response.data;
+    final List items;
+    if (data is Map && data['data'] is List) {
+      items = data['data'] as List;
+    } else if (data is List) {
+      items = data;
+    } else {
+      items = [];
+    }
+    return items
+        .map((i) => IngredientSuggestion.fromJson(i as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<RecipeSuggestion>> getRecipeSuggestions() async {
+    try {
+      final response = await _dio.get('/api/inventory/suggestions');
+      final data = response.data;
+      final List items = data is List ? data : [];
+      return items
+          .map((i) => RecipeSuggestion.fromJson(i as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<DetectedGroceryItem>> scanImage(List<int> imageBytes) async {
+    final formData = FormData.fromMap({
+      'image': MultipartFile.fromBytes(imageBytes, filename: 'scan.jpg'),
+    });
+    final response = await _dio.post(
+      '/api/inventory/scan',
+      data: formData,
+      options: Options(
+        contentType: 'multipart/form-data',
+        receiveTimeout: const Duration(seconds: 120),
+      ),
+    );
+    final data = response.data;
+    final List items =
+        (data is Map ? data['items'] : data) as List? ?? [];
+    return items
+        .map((i) => DetectedGroceryItem.fromJson(i as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<InventoryItem>> bulkAdd(
+      List<Map<String, dynamic>> items) async {
+    final response =
+        await _dio.post('/api/inventory/bulk', data: items);
+    final data = response.data as List;
+    return data
+        .map((i) => InventoryItem.fromJson(i as Map<String, dynamic>))
+        .toList();
   }
 }
 
@@ -57,5 +125,10 @@ final expiringCountProvider = FutureProvider<int>((ref) async {
 
 final inventoryListProvider = FutureProvider<List<InventoryItem>>((ref) async {
   return ref.watch(inventoryRepositoryProvider).getInventory();
+});
+
+final recipeSuggestionsProvider =
+    FutureProvider<List<RecipeSuggestion>>((ref) async {
+  return ref.watch(inventoryRepositoryProvider).getRecipeSuggestions();
 });
 

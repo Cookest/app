@@ -107,9 +107,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                             CachedNetworkImage(
                               imageUrl: heroUrl,
                               fit: BoxFit.cover,
-                              placeholder: (_, __) =>
+                              placeholder: (context, url) =>
                                   Container(color: context.appSurface),
-                              errorWidget: (_, __, ___) => Container(
+                              errorWidget: (context, url, error) => Container(
                                 color: context.appSurface,
                                 child: Icon(LucideIcons.utensils,
                                     size: 48, color: context.appMuted),
@@ -349,7 +349,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
                                           decoration: BoxDecoration(
                                             color: CookestTokens
                                                 .colorPrimaryDEFAULT
-                                                .withOpacity(0.08),
+                                                .withValues(alpha: 0.08),
                                             borderRadius:
                                                 BorderRadius.circular(6),
                                           ),
@@ -580,7 +580,7 @@ class _CookingModeSheetState extends State<_CookingModeSheet> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: CookestTokens.colorPrimaryDEFAULT
-                            .withOpacity(0.08),
+                            .withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(

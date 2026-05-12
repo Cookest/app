@@ -66,6 +66,7 @@ class MealPlanRepository {
       await _dio.put(
         '/api/meal-plans/$planId/slots/$slotId',
         data: {'recipe_id': recipeIdInt},
+        options: Options(contentType: 'application/json'),
       );
     } else {
       // Synthesised placeholder — create a new slot
@@ -80,6 +81,7 @@ class MealPlanRepository {
           'meal_type': mealType,
           if (servings != null) 'servings': servings,
         },
+        options: Options(contentType: 'application/json'),
       );
     }
   }

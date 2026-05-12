@@ -549,6 +549,7 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
   String _searchQuery = '';
   List<Recipe> _recipes = [];
   bool _loading = true;
+  bool _isRefreshing = false; // true during search re-fetches (not initial)
   String? _error;
 
   @override
@@ -564,17 +565,31 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
   }
 
   Future<void> _loadRecipes({String? q}) async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    // On initial load (_recipes is empty) show full skeleton; on re-fetch show overlay spinner
+    if (_recipes.isEmpty) {
+      setState(() { _loading = true; _error = null; });
+    } else {
+      setState(() { _isRefreshing = true; _error = null; });
+    }
     try {
       final recipes = await ref
           .read(recipeRepositoryProvider)
           .getRecipes(q: q?.isEmpty == true ? null : q);
-      if (mounted) setState(() { _recipes = recipes; _loading = false; });
+      if (mounted) {
+        setState(() {
+          _recipes = recipes;
+          _loading = false;
+          _isRefreshing = false;
+        });
+      }
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+          _isRefreshing = false;
+        });
+      }
     }
   }
 
@@ -594,6 +609,8 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
             widget.plan.id,
             widget.slot.id,
             recipe.id,
+            dayOfWeek: widget.slot.dayOfWeek,
+            mealType: widget.slot.mealType,
           );
       ref.invalidate(currentMealPlanProvider);
       if (context.mounted) Navigator.pop(context);
@@ -652,8 +669,24 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
           const SizedBox(height: 8),
           Expanded(
             child: _loading
-                ? const Center(child: CkSpinner())
-                : _error != null
+                // ── Initial load: skeleton cards ──────────────────────────
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Column(
+                      children: [
+                        CkSkeletonCard(),
+                        SizedBox(height: 10),
+                        CkSkeletonCard(),
+                        SizedBox(height: 10),
+                        CkSkeletonCard(),
+                        SizedBox(height: 10),
+                        CkSkeletonCard(),
+                        SizedBox(height: 10),
+                        CkSkeletonCard(),
+                      ],
+                    ),
+                  )
+                : _error != null && !_isRefreshing
                     ? Center(
                         child: Padding(
                           padding: const EdgeInsets.all(16),
@@ -663,116 +696,149 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
                           ),
                         ),
                       )
-                    : _recipes.isEmpty
-                        ? Center(
-                            child: Text(
-                              'No recipes found',
-                              style: TextStyle(color: context.appMuted),
-                            ),
-                          )
-                        : ListView.builder(
-                            controller: scrollController,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 4),
-                            itemCount: _recipes.length,
-                            itemBuilder: (_, i) {
-                              final recipe = _recipes[i];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: CkCard(
-                                  variant: CkCardVariant.interactive,
-                                  padding: CkCardPadding.sm,
-                                  onTap: () =>
-                                      _selectRecipe(context, recipe),
-                                  child: Row(
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius:
-                                            BorderRadius.circular(6),
-                                        child: recipe.primaryImageUrl !=
-                                                null
-                                            ? CachedNetworkImage(
-                                                imageUrl:
-                                                    recipe.primaryImageUrl!,
-                                                width: 56,
-                                                height: 56,
-                                                fit: BoxFit.cover,
-                                                errorWidget: (ctx, url, err) =>
-                                                    Container(
-                                                  width: 56,
-                                                  height: 56,
-                                                  color: context.appSurface,
-                                                  child: Icon(
-                                                      LucideIcons.utensils,
-                                                      size: 20,
-                                                      color:
-                                                          context.appMuted),
-                                                ),
-                                              )
-                                            : Container(
-                                                width: 56,
-                                                height: 56,
-                                                color: context.appSurface,
-                                                child: Icon(
-                                                    LucideIcons.utensils,
-                                                    size: 20,
-                                                    color: context.appMuted),
-                                              ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                    // ── Results (with optional refresh spinner overlay) ──
+                    : Stack(
+                        children: [
+                          _recipes.isEmpty && !_isRefreshing
+                              ? Center(
+                                  child: Text(
+                                    'No recipes found',
+                                    style: TextStyle(color: context.appMuted),
+                                  ),
+                                )
+                              : ListView.builder(
+                                  controller: scrollController,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 4),
+                                  itemCount: _recipes.length,
+                                  itemBuilder: (_, i) {
+                                    final recipe = _recipes[i];
+                                    return Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 10),
+                                      child: CkCard(
+                                        variant: CkCardVariant.interactive,
+                                        padding: CkCardPadding.sm,
+                                        onTap: () =>
+                                            _selectRecipe(context, recipe),
+                                        child: Row(
                                           children: [
-                                            Text(
-                                              recipe.name,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .titleSmall
-                                                  ?.copyWith(
-                                                    color: context.appHeading,
-                                                    fontWeight:
-                                                        FontWeight.w500,
-                                                  ),
-                                              maxLines: 2,
-                                              overflow:
-                                                  TextOverflow.ellipsis,
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              child: recipe.primaryImageUrl !=
+                                                      null
+                                                  ? CachedNetworkImage(
+                                                      imageUrl:
+                                                          recipe.primaryImageUrl!,
+                                                      width: 56,
+                                                      height: 56,
+                                                      fit: BoxFit.cover,
+                                                      placeholder: (ctx, url) =>
+                                                          Container(
+                                                        width: 56,
+                                                        height: 56,
+                                                        color:
+                                                            context.appSurface,
+                                                        child:
+                                                            const CkSkeletonCard(),
+                                                      ),
+                                                      errorWidget: (ctx, url,
+                                                              err) =>
+                                                          Container(
+                                                        width: 56,
+                                                        height: 56,
+                                                        color:
+                                                            context.appSurface,
+                                                        child: Icon(
+                                                            LucideIcons
+                                                                .utensils,
+                                                            size: 20,
+                                                            color: context
+                                                                .appMuted),
+                                                      ),
+                                                    )
+                                                  : Container(
+                                                      width: 56,
+                                                      height: 56,
+                                                      color: context.appSurface,
+                                                      child: Icon(
+                                                          LucideIcons.utensils,
+                                                          size: 20,
+                                                          color:
+                                                              context.appMuted),
+                                                    ),
                                             ),
-                                            const SizedBox(height: 4),
-                                            Row(children: [
-                                              if (recipe.totalTimeMin !=
-                                                  null) ...[
-                                                Icon(LucideIcons.clock,
-                                                    size: 12,
-                                                    color: context.appMuted),
-                                                const SizedBox(width: 3),
-                                                Text(
-                                                    '${recipe.totalTimeMin} min',
-                                                    style: TextStyle(
-                                                        fontSize: 12,
-                                                        color:
-                                                            context.appMuted)),
-                                                const SizedBox(width: 8),
-                                              ],
-                                              if (recipe.category != null)
-                                                Text(recipe.category!,
-                                                    style: TextStyle(
-                                                        fontSize: 12,
-                                                        color:
-                                                            context.appMuted)),
-                                            ]),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    recipe.name,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .titleSmall
+                                                        ?.copyWith(
+                                                          color:
+                                                              context.appHeading,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Row(children: [
+                                                    if (recipe.totalTimeMin !=
+                                                        null) ...[
+                                                      Icon(LucideIcons.clock,
+                                                          size: 12,
+                                                          color:
+                                                              context.appMuted),
+                                                      const SizedBox(width: 3),
+                                                      Text(
+                                                          '${recipe.totalTimeMin} min',
+                                                          style: TextStyle(
+                                                              fontSize: 12,
+                                                              color: context
+                                                                  .appMuted)),
+                                                      const SizedBox(width: 8),
+                                                    ],
+                                                    if (recipe.category !=
+                                                        null)
+                                                      Text(recipe.category!,
+                                                          style: TextStyle(
+                                                              fontSize: 12,
+                                                              color: context
+                                                                  .appMuted)),
+                                                  ]),
+                                                ],
+                                              ),
+                                            ),
+                                            Icon(LucideIcons.chevronRight,
+                                                size: 14,
+                                                color: context.appMuted),
                                           ],
                                         ),
                                       ),
-                                      Icon(LucideIcons.chevronRight,
-                                          size: 14, color: context.appMuted),
-                                    ],
-                                  ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
-                          ),
+                          // ── Spinner overlay during search re-fetch ──────
+                          if (_isRefreshing)
+                            Positioned.fill(
+                              child: Container(
+                                color: context.appBackground.withValues(alpha: 0.55),
+                                child: const Center(
+                                  child: CkSpinner(size: CkSpinnerSize.lg),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
           ),
         ],
       ),

@@ -42,8 +42,46 @@ class MealPlanRepository {
     await _dio.put('/api/meal-plans/$planId/slots/$slotId/flex', data: {'flex_type': flexType});
   }
 
-  Future<void> swapRecipe(String planId, String slotId, String recipeId) async {
-    await _dio.put('/api/meal-plans/$planId/slots/$slotId', data: {'recipe_id': recipeId});
+  /// Assign a recipe to a slot.
+  ///
+  /// - If [slotId] is a real numeric DB id → PUT (update existing row)
+  /// - Otherwise (synthesised placeholder like "1_breakfast") → POST (create new row)
+  Future<void> swapRecipe(
+    String planId,
+    String slotId,
+    String recipeId, {
+    int? dayOfWeek,
+    String? mealType,
+    int? servings,
+  }) async {
+    final recipeIdInt = int.tryParse(recipeId);
+    if (recipeIdInt == null) {
+      throw 'Invalid recipe id: $recipeId';
+    }
+
+    final slotIdInt = int.tryParse(slotId);
+
+    if (slotIdInt != null) {
+      // Existing DB row — update it
+      await _dio.put(
+        '/api/meal-plans/$planId/slots/$slotId',
+        data: {'recipe_id': recipeIdInt},
+      );
+    } else {
+      // Synthesised placeholder — create a new slot
+      if (dayOfWeek == null || mealType == null) {
+        throw 'dayOfWeek and mealType are required when creating a new slot';
+      }
+      await _dio.post(
+        '/api/meal-plans/$planId/slots',
+        data: {
+          'recipe_id': recipeIdInt,
+          'day_of_week': dayOfWeek,
+          'meal_type': mealType,
+          if (servings != null) 'servings': servings,
+        },
+      );
+    }
   }
 
   Future<Map<String, dynamic>> getNutrition(String planId) async {

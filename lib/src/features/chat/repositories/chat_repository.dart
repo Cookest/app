@@ -32,7 +32,12 @@ class ChatRepository {
 
   Future<String> sendMessage(String message) async {
     try {
-      final response = await _dio.post('/api/chat', data: {'message': message});
+      // AI inference can take up to 2 minutes on CPU servers — override the global 10s timeout
+      final response = await _dio.post(
+        '/api/chat',
+        data: {'message': message},
+        options: Options(receiveTimeout: const Duration(seconds: 120)),
+      );
       
       // Handle different response types
       final data = response.data;

@@ -11,11 +11,11 @@ import 'package:cookest/src/core/theme/app_colors.dart';
 import '../repositories/chat_repository.dart';
 import '../models/chat_message.dart';
 
-// ── Providers ────────────────────────────────────────────────────────────────
+// ── Providers ─────────────────────────────────────────────────────────────────
 
 ChatMessage _welcomeMessage() => ChatMessage(
       text:
-          "Hi! I'm Cookest AI 👋\n\nI can help you find recipes, plan your meals, update your pantry, and much more. What would you like to do?",
+          "Hi! I'm Cookest AI 👋\n\nI know your pantry, your meal plan, and your dietary preferences. Ask me anything — or tap a suggestion below to get started.",
       isUser: false,
       timestamp: DateTime.now(),
     );
@@ -24,16 +24,57 @@ final chatMessagesProvider = StateProvider<List<ChatMessage>>(
   (ref) => [_welcomeMessage()],
 );
 
-/// Current conversation session ID — null means a new session will be started.
 final chatSessionIdProvider = StateProvider<int?>((ref) => null);
 
-// ── Suggestion chips data ─────────────────────────────────────────────────────
+// ── Capabilities data ─────────────────────────────────────────────────────────
 
-const _suggestions = [
+final _capabilities = [
+  (
+    icon: LucideIcons.search,
+    title: 'Find recipes',
+    desc: 'By cuisine, ingredient, time, or dietary need',
+  ),
+  (
+    icon: LucideIcons.calendarDays,
+    title: 'Manage meal plan',
+    desc: 'View, change, or clear your weekly meals',
+  ),
+  (
+    icon: LucideIcons.checkCircle,
+    title: 'Mark meals done',
+    desc: 'Log what you\'ve cooked today',
+  ),
+  (
+    icon: LucideIcons.shoppingBag,
+    title: 'Pantry management',
+    desc: 'Check inventory, add or remove items',
+  ),
+  (
+    icon: LucideIcons.alertTriangle,
+    title: 'Expiry alerts',
+    desc: 'See what\'s about to go off in your fridge',
+  ),
+  (
+    icon: LucideIcons.bookOpen,
+    title: 'Recipe details',
+    desc: 'Ingredients, steps, and full nutrition info',
+  ),
+  (
+    icon: LucideIcons.chefHat,
+    title: 'Cooking guidance',
+    desc: 'Step-by-step help while you cook',
+  ),
+];
+
+// ── Suggestion chips ──────────────────────────────────────────────────────────
+
+final _suggestions = [
   (icon: LucideIcons.utensils, label: 'What can I cook today?'),
-  (icon: LucideIcons.calendarDays, label: 'Plan my meals for the week'),
+  (icon: LucideIcons.calendarDays, label: 'Show my meal plan'),
   (icon: LucideIcons.chefHat, label: 'Change dinner to Italian'),
   (icon: LucideIcons.clock, label: "What's expiring soon?"),
+  (icon: LucideIcons.shoppingBag, label: "What's in my pantry?"),
+  (icon: LucideIcons.helpCircle, label: "What can you do?"),
 ];
 
 // ── Tool label mapping ─────────────────────────────────────────────────────────
@@ -52,9 +93,9 @@ String _toolLabel(String toolName) {
       return '✅ Marked meal done';
     case 'get_pantry':
       return '🥫 Checked pantry';
-    case 'add_pantry_item':
+    case 'add_to_pantry':
       return '➕ Added to pantry';
-    case 'remove_pantry_item':
+    case 'remove_from_pantry':
       return '🗑️ Removed from pantry';
     case 'get_recipe_details':
       return '📖 Got recipe details';
@@ -63,7 +104,7 @@ String _toolLabel(String toolName) {
   }
 }
 
-// ── Screen ─────────────────────────────────────────────────────────────────────
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -96,18 +137,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     super.dispose();
   }
 
-  void _scrollToBottom({bool immediate = false}) {
+  void _scrollToBottom() {
     if (!_scrollController.hasClients) return;
-    final target = _scrollController.position.maxScrollExtent;
-    if (immediate) {
-      _scrollController.jumpTo(target);
-    } else {
-      _scrollController.animateTo(
-        target,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
   Future<void> _sendMessage([String? prefill]) async {
@@ -133,7 +169,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
           .read(chatRepositoryProvider)
           .sendMessage(text, sessionId: sessionId);
 
-      // Persist session so subsequent messages continue the same conversation
       ref.read(chatSessionIdProvider.notifier).state = response.sessionId;
 
       ref.read(chatMessagesProvider.notifier).update(
@@ -148,7 +183,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
             ],
           );
 
-      // If the AI changed or cleared the meal plan, refresh the meal plan screen
       if (response.actionsTaken.any((t) =>
           t == 'update_meal_plan_slot' ||
           t == 'mark_meal_completed' ||
@@ -178,6 +212,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     ref.read(chatSessionIdProvider.notifier).state = null;
   }
 
+  void _showCapabilities() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _CapabilitiesSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(chatMessagesProvider);
@@ -201,15 +244,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
               ),
             ),
             Text(
-              'Can manage your meals & pantry',
-              style: TextStyle(
-                fontSize: 11,
-                color: context.appMuted,
-              ),
+              'Your personal cooking assistant',
+              style: TextStyle(fontSize: 11, color: context.appMuted),
             ),
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.helpCircle, size: 20),
+            tooltip: 'What can I do?',
+            onPressed: _showCapabilities,
+          ),
           if (messages.length > 1)
             IconButton(
               icon: const Icon(LucideIcons.rotateCcw, size: 18),
@@ -224,20 +269,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
             child: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              // +1 for typing indicator, +1 for suggestions
               itemCount: messages.length +
                   (_isLoading ? 1 : 0) +
                   (showSuggestions ? 1 : 0),
               itemBuilder: (context, index) {
-                // Suggestions row after welcome message
                 if (showSuggestions && index == 1) {
                   return _SuggestionChips(onSelected: _sendMessage);
                 }
 
-                // Adjust index when suggestions row is inserted
                 final msgIndex = showSuggestions ? index - 1 : index;
 
-                // Typing indicator at end while loading
                 if (_isLoading && msgIndex == messages.length) {
                   return _TypingIndicator(controller: _typingController);
                 }
@@ -264,7 +305,103 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   }
 }
 
-// ── Message widgets ────────────────────────────────────────────────────────────
+// ── Capabilities bottom sheet ─────────────────────────────────────────────────
+
+class _CapabilitiesSheet extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.appSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        24, 16, 24, MediaQuery.of(context).padding.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: context.appBorder,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'What Cookest AI can do',
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: context.appHeading,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Just ask in plain English — no commands needed.',
+            style: TextStyle(fontSize: 13, color: context.appMuted),
+          ),
+          const SizedBox(height: 20),
+          ..._capabilities.map(
+            (c) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: CookestTokens.colorPrimaryDEFAULT
+                          .withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      c.icon,
+                      size: 18,
+                      color: CookestTokens.colorPrimaryDEFAULT,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          c.title,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: context.appHeading,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          c.desc,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.appMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Message widgets ───────────────────────────────────────────────────────────
 
 class _UserBubble extends StatelessWidget {
   const _UserBubble({required this.message});
@@ -275,9 +412,8 @@ class _UserBubble extends StatelessWidget {
     return Align(
       alignment: Alignment.centerRight,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12, left: 48),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.only(bottom: 12, left: 56),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: CookestTokens.colorPrimaryDEFAULT,
           borderRadius: const BorderRadius.only(
@@ -289,7 +425,8 @@ class _UserBubble extends StatelessWidget {
         ),
         child: SelectableText(
           message.text,
-          style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
+          style: const TextStyle(
+              color: Colors.white, fontSize: 14, height: 1.4),
         ),
       ),
     );
@@ -305,7 +442,7 @@ class _AiBubble extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12, right: 48),
+        margin: const EdgeInsets.only(bottom: 12, right: 56),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -339,14 +476,14 @@ class _RichText extends StatelessWidget {
   final String text;
   final bool isError;
 
-  /// Very small Markdown-lite: handles **bold**, bullet lines, and newlines.
   List<InlineSpan> _parseInline(String line, TextStyle base) {
     final spans = <InlineSpan>[];
     final regex = RegExp(r'\*\*(.+?)\*\*');
     int last = 0;
     for (final match in regex.allMatches(line)) {
       if (match.start > last) {
-        spans.add(TextSpan(text: line.substring(last, match.start), style: base));
+        spans.add(
+            TextSpan(text: line.substring(last, match.start), style: base));
       }
       spans.add(TextSpan(
         text: match.group(1),
@@ -420,7 +557,7 @@ class _ActionChip extends StatelessWidget {
   }
 }
 
-// ── Typing indicator ───────────────────────────────────────────────────────────
+// ── Typing indicator ──────────────────────────────────────────────────────────
 
 class _TypingIndicator extends StatelessWidget {
   const _TypingIndicator({required this.controller});
@@ -431,35 +568,42 @@ class _TypingIndicator extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12, right: 48),
+        margin: const EdgeInsets.only(bottom: 12, right: 56),
         child: CkCard(
           variant: CkCardVariant.standard,
           padding: CkCardPadding.sm,
           child: Row(
             mainAxisSize: MainAxisSize.min,
-            children: List.generate(3, (i) {
-              return AnimatedBuilder(
-                animation: controller,
-                builder: (_, a) {
-                  final offset = math.sin(
-                    (controller.value * 2 * math.pi) - (i * math.pi / 3),
-                  );
-                  return Container(
-                    margin: EdgeInsets.only(
-                      right: i < 2 ? 4 : 0,
-                      bottom: ((offset + 1) * 4).clamp(0, 8),
-                    ),
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: CookestTokens.colorPrimaryDEFAULT
-                          .withValues(alpha: 0.6 + offset * 0.4),
-                      shape: BoxShape.circle,
-                    ),
-                  );
-                },
-              );
-            }),
+            children: [
+              ...List.generate(3, (i) {
+                return AnimatedBuilder(
+                  animation: controller,
+                  builder: (_, a) {
+                    final offset = math.sin(
+                      (controller.value * 2 * math.pi) - (i * math.pi / 3),
+                    );
+                    return Container(
+                      margin: EdgeInsets.only(
+                        right: i < 2 ? 4 : 0,
+                        bottom: ((offset + 1) * 4).clamp(0, 8),
+                      ),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: CookestTokens.colorPrimaryDEFAULT
+                            .withValues(alpha: 0.5 + offset * 0.5),
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  },
+                );
+              }),
+              const SizedBox(width: 8),
+              Text(
+                'Thinking…',
+                style: TextStyle(fontSize: 12, color: context.appMuted),
+              ),
+            ],
           ),
         ),
       ),
@@ -467,7 +611,7 @@ class _TypingIndicator extends StatelessWidget {
   }
 }
 
-// ── Suggestion chips ───────────────────────────────────────────────────────────
+// ── Suggestion chips ──────────────────────────────────────────────────────────
 
 class _SuggestionChips extends StatelessWidget {
   const _SuggestionChips({required this.onSelected});
@@ -495,14 +639,13 @@ class _SuggestionChips extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(s.icon, size: 14, color: CookestTokens.colorPrimaryDEFAULT),
+                  Icon(s.icon,
+                      size: 14,
+                      color: CookestTokens.colorPrimaryDEFAULT),
                   const SizedBox(width: 6),
                   Text(
                     s.label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: context.appHeading,
-                    ),
+                    style: TextStyle(fontSize: 13, color: context.appHeading),
                   ),
                 ],
               ),
@@ -514,7 +657,7 @@ class _SuggestionChips extends StatelessWidget {
   }
 }
 
-// ── Input bar ──────────────────────────────────────────────────────────────────
+// ── Input bar ─────────────────────────────────────────────────────────────────
 
 class _InputBar extends StatelessWidget {
   const _InputBar({
@@ -534,10 +677,7 @@ class _InputBar extends StatelessWidget {
         border: Border(top: BorderSide(color: context.appBorder)),
       ),
       padding: EdgeInsets.fromLTRB(
-        12,
-        8,
-        12,
-        MediaQuery.of(context).padding.bottom + 8,
+        12, 8, 12, MediaQuery.of(context).padding.bottom + 8,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,

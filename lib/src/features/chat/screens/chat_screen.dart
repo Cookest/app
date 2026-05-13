@@ -40,6 +40,8 @@ const _suggestions = [
 
 String _toolLabel(String toolName) {
   switch (toolName) {
+    case 'clear_meal_plan':
+      return '🗑️ Cleared meal plan';
     case 'search_recipes':
       return '🔍 Searched recipes';
     case 'get_meal_plan':
@@ -146,9 +148,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
             ],
           );
 
-      // If the AI changed the meal plan, refresh the meal plan screen
+      // If the AI changed or cleared the meal plan, refresh the meal plan screen
       if (response.actionsTaken.any((t) =>
-          t == 'update_meal_plan_slot' || t == 'mark_meal_completed')) {
+          t == 'update_meal_plan_slot' ||
+          t == 'mark_meal_completed' ||
+          t == 'clear_meal_plan')) {
         ref.invalidate(currentMealPlanProvider);
       }
     } catch (e) {

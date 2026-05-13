@@ -2,25 +2,31 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_client.dart';
 
-class ChatResponse {
+class ChatApiResponse {
   final int sessionId;
   final int messageId;
   final String reply;
   final int? tokensUsed;
+  final List<String> actionsTaken;
 
-  ChatResponse({
+  const ChatApiResponse({
     required this.sessionId,
     required this.messageId,
     required this.reply,
     this.tokensUsed,
+    this.actionsTaken = const [],
   });
 
-  factory ChatResponse.fromJson(Map<String, dynamic> json) {
-    return ChatResponse(
+  factory ChatApiResponse.fromJson(Map<String, dynamic> json) {
+    return ChatApiResponse(
       sessionId: json['session_id'] as int,
       messageId: json['message_id'] as int,
       reply: json['reply'] as String,
       tokensUsed: json['tokens_used'] as int?,
+      actionsTaken: (json['actions_taken'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
     );
   }
 }
@@ -30,34 +36,39 @@ class ChatRepository {
 
   ChatRepository(this._dio);
 
-  Future<String> sendMessage(String message) async {
+  /// Send a message, optionally continuing an existing session.
+  /// AI inference on CPU can take up to 2 minutes — receive timeout is 120s.
+  Future<ChatApiResponse> sendMessage(
+    String message, {
+    int? sessionId,
+  }) async {
     try {
-      // AI inference can take up to 2 minutes on CPU servers — override the global 10s timeout
       final response = await _dio.post(
         '/api/chat',
-        data: {'message': message},
+        data: {
+          'message': message,
+          if (sessionId != null) 'session_id': sessionId,
+        },
         options: Options(receiveTimeout: const Duration(seconds: 120)),
       );
-      
-      // Handle different response types
+
       final data = response.data;
       if (data is Map<String, dynamic>) {
-        final chatResp = ChatResponse.fromJson(data);
-        return chatResp.reply;
-      } else if (data is String) {
-        return data;
+        return ChatApiResponse.fromJson(data);
       }
-      
-      return 'Sorry, I could not process that.';
+      return ChatApiResponse(
+        sessionId: sessionId ?? 0,
+        messageId: 0,
+        reply: data is String ? data : 'Sorry, I could not process that.',
+      );
     } on DioException catch (e) {
       if (e.response?.statusCode == 402) {
         throw 'You have reached your free daily message limit. Please upgrade to Pro.';
       }
-      // Log error for debugging
-      print('Chat API error: ${e.response?.statusCode} - ${e.response?.data}');
-      throw e.response?.data['error'] ?? 'Failed to send message. Please try again.';
-    } catch (e) {
-      print('Chat error: $e');
+      final errData = e.response?.data;
+      final msg = errData is Map ? errData['error'] : null;
+      throw msg ?? 'Failed to send message. Please try again.';
+    } catch (_) {
       throw 'Failed to send message. Please try again.';
     }
   }

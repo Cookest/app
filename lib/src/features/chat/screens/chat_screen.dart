@@ -625,31 +625,13 @@ class _SuggestionChips extends StatelessWidget {
         spacing: 8,
         runSpacing: 8,
         children: _suggestions.map((s) {
-          return InkWell(
-            onTap: () => onSelected(s.label),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: context.appSurface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: context.appBorder),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(s.icon,
-                      size: 14,
-                      color: CookestTokens.colorPrimaryDEFAULT),
-                  const SizedBox(width: 6),
-                  Text(
-                    s.label,
-                    style: TextStyle(fontSize: 13, color: context.appHeading),
-                  ),
-                ],
-              ),
-            ),
+          return CkButton(
+            variant: CkButtonVariant.secondary,
+            size: CkButtonSize.sm,
+            onPressed: () => onSelected(s.label),
+            iconLeft: Icon(s.icon,
+                size: 14, color: CookestTokens.colorPrimaryDEFAULT),
+            child: Text(s.label),
           );
         }).toList(),
       ),

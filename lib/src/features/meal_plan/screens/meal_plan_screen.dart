@@ -262,7 +262,7 @@ class _MealPeriodCard extends ConsumerWidget {
             ? _MealCardContent(slot: slot, plan: plan)
             : _EmptyMealCard(plan: plan, slot: slot),
         const SizedBox(height: 4),
-        Divider(color: context.appBorder),
+        const CkDivider(),
         const SizedBox(height: 16),
       ],
     );

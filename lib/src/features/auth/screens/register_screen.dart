@@ -252,7 +252,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text('Already have an account? '),
-                TextButton(
+                CkButton(
+                  variant: CkButtonVariant.ghost,
+                  size: CkButtonSize.sm,
                   onPressed: () => context.pop(),
                   child: const Text('Sign in'),
                 ),

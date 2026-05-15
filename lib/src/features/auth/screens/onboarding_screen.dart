@@ -69,7 +69,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 children: [
                   Text('Step ${_currentPage + 1} of 3',
                       style: GoogleFonts.inter(fontSize: 14, color: context.appMuted)),
-                  TextButton(onPressed: () => context.go('/'), child: const Text('Skip')),
+                  CkButton(
+                    variant: CkButtonVariant.ghost,
+                    size: CkButtonSize.sm,
+                    onPressed: () => context.go('/'),
+                    child: const Text('Skip'),
+                  ),
                 ],
               ),
             ),

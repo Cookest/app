@@ -109,15 +109,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               fullWidth: true,
             ),
             const SizedBox(height: 8),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _rememberMe,
-              onChanged: (value) =>
-                  setState(() => _rememberMe = value ?? false),
-              controlAffinity: ListTileControlAffinity.leading,
-              title: Text(
-                'Remember me',
-                style: GoogleFonts.inter(color: context.appMuted),
+            GestureDetector(
+              onTap: () => setState(() => _rememberMe = !_rememberMe),
+              child: Row(
+                children: [
+                  CkCheckbox(
+                    value: _rememberMe,
+                    onChanged: (v) => setState(() => _rememberMe = v),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Remember me',
+                    style: GoogleFonts.inter(color: context.appMuted),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 24),
@@ -133,7 +138,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text("Don't have an account? "),
-                TextButton(
+                CkButton(
+                  variant: CkButtonVariant.ghost,
+                  size: CkButtonSize.sm,
                   onPressed: () => context.push('/register'),
                   child: const Text('Sign up'),
                 ),

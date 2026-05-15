@@ -173,7 +173,7 @@ class ProfileScreen extends ConsumerWidget {
                       label: 'Account & Settings',
                       onTap: () => context.push('/settings'),
                     ),
-                    Divider(color: context.appBorder, height: 1),
+                    const CkDivider(),
                     _buildSettingsRow(
                       context,
                       icon: LucideIcons.crown,
@@ -203,8 +203,9 @@ class ProfileScreen extends ConsumerWidget {
     required String label,
     required VoidCallback onTap,
   }) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(

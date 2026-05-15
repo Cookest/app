@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../features/recipes/screens/food_recipe_detail_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -46,6 +47,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
       GoRoute(path: '/recipes/create', builder: (context, state) => const CreateRecipeScreen()),
       GoRoute(path: '/recipes/:id', builder: (context, state) => RecipeDetailScreen(recipeId: state.pathParameters['id']!)),
+      GoRoute(
+        path: '/browse/recipes/:id',
+        builder: (context, state) => FoodRecipeDetailScreen(
+          recipeId: int.parse(state.pathParameters['id']!),
+        ),
+      ),
       GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
       GoRoute(path: '/paywall', builder: (context, state) => const PaywallScreen()),
       GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),

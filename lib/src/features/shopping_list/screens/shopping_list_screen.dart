@@ -142,7 +142,8 @@ class _ShoppingListScreenState extends ConsumerState<ShoppingListScreen> {
                                 color: context.appMuted),
                           ),
                           const SizedBox(height: 8),
-                          TextButton(
+                          CkButton(
+                            size: CkButtonSize.sm,
                             onPressed: _sync,
                             child: const Text('Sync from Meal Plan'),
                           ),

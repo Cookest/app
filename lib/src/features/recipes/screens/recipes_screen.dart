@@ -11,6 +11,7 @@ import '../repositories/recipe_repository.dart';
 import '../repositories/food_browse_repository.dart';
 import '../models/recipe.dart';
 import '../models/food_recipe.dart';
+import 'generate_recipe_screen.dart';
 
 final recipeSearchProvider = StateProvider<String>((ref) => '');
 final recipeMatchInventoryProvider = StateProvider<bool>((ref) => false);
@@ -83,6 +84,20 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
           ),
         ),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: CkButton(
+              variant: CkButtonVariant.ghost,
+              size: CkButtonSize.sm,
+              iconLeft: const Icon(LucideIcons.sparkles, size: 14),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const GenerateRecipeScreen(),
+                ),
+              ),
+              child: const Text('IA'),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: CkButton(

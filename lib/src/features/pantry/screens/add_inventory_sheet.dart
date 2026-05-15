@@ -286,12 +286,11 @@ class _AddInventorySheetState extends ConsumerState<AddInventorySheet> {
 
             // Autocomplete dropdown
             if (_loadingSuggestions)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: LinearProgressIndicator(
-                  backgroundColor: context.appSurface,
-                  color: CookestTokens.colorPrimaryDEFAULT,
-                  minHeight: 2,
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: CkProgress(
+                  size: CkProgressSize.sm,
+                  color: CkProgressColor.primary,
                 ),
               )
             else if (_suggestions.isNotEmpty)
@@ -381,7 +380,7 @@ class _AddInventorySheetState extends ConsumerState<AddInventorySheet> {
             const SizedBox(height: 12),
 
             // Expiry date
-            InkWell(
+            GestureDetector(
               onTap: () async {
                 final date = await showDatePicker(
                   context: context,
@@ -391,7 +390,7 @@ class _AddInventorySheetState extends ConsumerState<AddInventorySheet> {
                 );
                 if (date != null) setState(() => _expiryDate = date);
               },
-              borderRadius: BorderRadius.circular(8),
+              behavior: HitTestBehavior.opaque,
               child: Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 12, vertical: 12),
@@ -434,42 +433,26 @@ class _AddInventorySheetState extends ConsumerState<AddInventorySheet> {
             const SizedBox(height: 20),
 
             // Add button
-            SizedBox(
-              width: double.infinity,
-              child: CkButton(
-                onPressed: _saving || _selectedName.trim().isEmpty
-                    ? null
-                    : _save,
-                child: _saving
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(LucideIcons.plus,
-                              size: 16, color: Colors.white),
-                          const SizedBox(width: 8),
-                          Text(
-                            _selectedName.trim().isEmpty
-                                ? 'Add Item'
-                                : 'Add ${_selectedName.trim()}',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
+            CkButton(
+              onPressed: _saving || _selectedName.trim().isEmpty ? null : _save,
+              loading: _saving,
+              fullWidth: true,
+              iconLeft: const Icon(LucideIcons.plus, size: 16, color: Colors.white),
+              child: Text(
+                _selectedName.trim().isEmpty
+                    ? 'Add Item'
+                    : 'Add ${_selectedName.trim()}',
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             if (_added) ...[
               const SizedBox(height: 8),
-              TextButton.icon(
+              CkButton(
+                variant: CkButtonVariant.ghost,
+                size: CkButtonSize.sm,
                 onPressed: () => Navigator.pop(context, true),
-                icon:
-                    Icon(LucideIcons.check, size: 14, color: context.appMuted),
-                label: Text('Done', style: TextStyle(color: context.appMuted)),
+                iconLeft: Icon(LucideIcons.check, size: 14, color: context.appMuted),
+                child: const Text('Done'),
               ),
             ],
           ],

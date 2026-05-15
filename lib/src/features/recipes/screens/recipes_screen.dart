@@ -34,22 +34,19 @@ class RecipesScreen extends ConsumerStatefulWidget {
   ConsumerState<RecipesScreen> createState() => _RecipesScreenState();
 }
 
-class _RecipesScreenState extends ConsumerState<RecipesScreen>
-    with SingleTickerProviderStateMixin {
+class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   static const _categories = ['All', 'Breakfast', 'Lunch', 'Dinner', 'Snack'];
-  late final TabController _tabController;
+  String _activeTab = 'my';
   Timer? _debounce;
   Timer? _browseDebounce;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _debounce?.cancel();
     _browseDebounce?.cancel();
     super.dispose();
@@ -97,28 +94,30 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen>
             ),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: CookestTokens.colorPrimaryDEFAULT,
-          unselectedLabelColor: context.appMuted,
-          indicatorColor: CookestTokens.colorPrimaryDEFAULT,
-          indicatorSize: TabBarIndicatorSize.label,
-          dividerColor: context.appBorder,
-          tabs: const [
-            Tab(text: 'My Recipes'),
-            Tab(text: 'Browse'),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _MyRecipesTab(
-            categories: _categories,
-            onSearchChanged: _onSearchChanged,
-            onShowFilter: () => _showPantryFilterModal(context, ref),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: CkTabs(
+              variant: CkTabsVariant.underline,
+              fullWidth: true,
+              onChanged: (id) => setState(() => _activeTab = id),
+              items: const [
+                CkTabItem(id: 'my', label: 'My Recipes'),
+                CkTabItem(id: 'browse', label: 'Browse'),
+              ],
+            ),
           ),
-          _BrowseTab(onSearchChanged: _onBrowseSearchChanged),
+          Expanded(
+            child: _activeTab == 'my'
+                ? _MyRecipesTab(
+                    categories: _categories,
+                    onSearchChanged: _onSearchChanged,
+                    onShowFilter: () => _showPantryFilterModal(context, ref),
+                  )
+                : _BrowseTab(onSearchChanged: _onBrowseSearchChanged),
+          ),
         ],
       ),
     );
@@ -217,20 +216,18 @@ class _MyRecipesTab extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              GestureDetector(
-                onTap: onShowFilter,
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: matchInventory
-                        ? CookestTokens.colorPrimaryDEFAULT
-                        : context.appSurface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: context.appBorder),
-                  ),
-                  child: Icon(LucideIcons.filter,
-                      size: 18,
-                      color: matchInventory ? Colors.white : context.appMuted),
+              CkButton(
+                variant: matchInventory
+                    ? CkButtonVariant.primary
+                    : CkButtonVariant.secondary,
+                size: CkButtonSize.sm,
+                onPressed: onShowFilter,
+                child: Icon(
+                  LucideIcons.filter,
+                  size: 18,
+                  color: matchInventory
+                      ? Colors.white
+                      : context.appMuted,
                 ),
               ),
             ],

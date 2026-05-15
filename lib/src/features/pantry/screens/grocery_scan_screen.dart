@@ -239,7 +239,7 @@ class _GroceryScanScreenState extends ConsumerState<GroceryScanScreen> {
           ),
           const SizedBox(height: 28),
         ],
-        const CircularProgressIndicator(strokeWidth: 3),
+        const CkSpinner(size: CkSpinnerSize.sm),
         const SizedBox(height: 20),
         Text(
           'Analysing your groceries…',
@@ -306,7 +306,9 @@ class _GroceryScanScreenState extends ConsumerState<GroceryScanScreen> {
                   style: TextStyle(color: context.appMuted, fontSize: 13),
                 ),
               ),
-              TextButton(
+              CkButton(
+                variant: CkButtonVariant.ghost,
+                size: CkButtonSize.sm,
                 onPressed: () => setState(() {
                   for (final item in _items) {
                     item.selected = !allSelected;
@@ -314,10 +316,6 @@ class _GroceryScanScreenState extends ConsumerState<GroceryScanScreen> {
                 }),
                 child: Text(
                   allSelected ? 'Deselect all' : 'Select all',
-                  style: TextStyle(
-                    color: CookestTokens.colorPrimaryDEFAULT,
-                    fontSize: 13,
-                  ),
                 ),
               ),
             ],
@@ -410,11 +408,9 @@ class _DetectedItemTileState extends State<_DetectedItemTile> {
           children: [
             Row(
               children: [
-                Checkbox(
+                CkCheckbox(
                   value: item.selected,
-                  onChanged: (v) => setState(() => item.selected = v ?? true),
-                  activeColor: CookestTokens.colorPrimaryDEFAULT,
-                  side: BorderSide(color: context.appBorder),
+                  onChanged: (v) => setState(() => item.selected = v),
                 ),
                 Expanded(
                   child: Column(
@@ -449,47 +445,40 @@ class _DetectedItemTileState extends State<_DetectedItemTile> {
                   children: [
                     SizedBox(
                       width: 68,
-                      child: TextField(
+                      child: CkInput(
                         controller: _qtyCtrl,
+                        inputSize: CkInputSize.sm,
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
-                        style: TextStyle(
-                            fontSize: 13, color: context.appHeading),
-                        decoration: InputDecoration(
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 8),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(6),
-                            borderSide:
-                                BorderSide(color: context.appBorder),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(6),
-                            borderSide: BorderSide(
-                                color: CookestTokens.colorPrimaryDEFAULT),
-                          ),
-                        ),
                         onChanged: (v) =>
                             item.quantity = double.tryParse(v) ?? 1.0,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    _MiniDropdown(
-                      value: item.unit,
-                      options: _scanUnits,
-                      onChanged: (v) => setState(() => item.unit = v),
+                    SizedBox(
+                      width: 80,
+                      child: CkSelect(
+                        value: item.unit,
+                        options: _scanUnits
+                            .map((u) => CkSelectOption(value: u, label: u))
+                            .toList(),
+                        onChanged: (v) => setState(() => item.unit = v),
+                      ),
                     ),
                     const SizedBox(width: 8),
-                    _MiniDropdown(
-                      value: item.storageLocation,
-                      options: _scanLocations,
-                      onChanged: (v) =>
-                          setState(() => item.storageLocation = v),
-                      prefix: Icon(
-                        _storageIcon(item.storageLocation),
-                        size: 12,
-                        color: context.appMuted,
+                    SizedBox(
+                      width: 96,
+                      child: CkSelect(
+                        value: item.storageLocation,
+                        options: _scanLocations
+                            .map((l) => CkSelectOption(
+                                  value: l,
+                                  label:
+                                      '${_locationEmoji(l)} ${l[0].toUpperCase()}${l.substring(1)}',
+                                ))
+                            .toList(),
+                        onChanged: (v) =>
+                            setState(() => item.storageLocation = v),
                       ),
                     ),
                   ],
@@ -502,55 +491,8 @@ class _DetectedItemTileState extends State<_DetectedItemTile> {
   }
 }
 
-IconData _storageIcon(String loc) => switch (loc) {
-      'fridge' => LucideIcons.thermometerSnowflake,
-      'freezer' => LucideIcons.snowflake,
-      _ => LucideIcons.shoppingBag,
+String _locationEmoji(String loc) => switch (loc) {
+      'fridge' => '❄️',
+      'freezer' => '🧊',
+      _ => '🥫',
     };
-
-class _MiniDropdown extends StatelessWidget {
-  final String value;
-  final List<String> options;
-  final ValueChanged<String> onChanged;
-  final Widget? prefix;
-
-  const _MiniDropdown({
-    required this.value,
-    required this.options,
-    required this.onChanged,
-    this.prefix,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final resolved = options.contains(value) ? value : options.first;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: context.appSurface,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: context.appBorder),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (prefix != null) ...[prefix!, const SizedBox(width: 4)],
-            DropdownButton<String>(
-              value: resolved,
-              isDense: true,
-              style: TextStyle(fontSize: 12, color: context.appHeading),
-              dropdownColor: context.appSurface,
-              items: options
-                  .map((o) => DropdownMenuItem(value: o, child: Text(o)))
-                  .toList(),
-              onChanged: (v) { if (v != null) onChanged(v); },
-              icon: Icon(LucideIcons.chevronDown,
-                  size: 10, color: context.appMuted),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

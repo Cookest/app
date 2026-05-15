@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/recipes/screens/food_recipe_detail_screen.dart';
@@ -26,14 +27,18 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final _isDemoMode = kIsWeb && Uri.base.queryParameters.containsKey('demo');
   final router = GoRouter(
-    initialLocation: '/splash',
+    initialLocation: _isDemoMode ? '/' : '/splash',
     navigatorKey: _rootNavigatorKey,
     redirect: (context, state) {
       final authState = ref.read(authProvider);
       final isAuthenticated = authState.isAuthenticated;
       final isLoggingIn = state.matchedLocation == '/login' || state.matchedLocation == '/register';
       final isSplash = state.matchedLocation == '/splash';
+
+      // Demo mode for screenshot capture — skip all auth guards
+      if (kIsWeb && Uri.base.queryParameters.containsKey('demo')) return null;
 
       if (isSplash) return null;
       if (!isAuthenticated && !isLoggingIn) return '/login';

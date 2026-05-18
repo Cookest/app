@@ -79,3 +79,39 @@ Scopes: `auth`, `home`, `recipes`, `pantry`, `shopping`, `chat`, `theme`, `navig
 ## MCP Server
 
 For programmatic documentation access, use the MCP server at `../docs/mcp/`.
+
+---
+
+## Session Protocols
+
+### Startup (every session — non-negotiable)
+
+1. `vault_read("Agents/context.md")` — live project memory
+2. `vault_read("Errors/error-log.md")` — past mistakes to avoid repeating
+3. `vault_read("Learnings/learning-log.md")` — past discoveries to reuse
+4. `get_project_context()` — live system snapshot
+5. If working with Flutter/Dart packages: `query-docs` via Context7 (IDs in `vault/Learnings/library-ids.md`)
+
+### Context7 — Use Before Any Library Code
+
+Do NOT guess package APIs from training data. Fetch the current docs:
+
+```
+query-docs({ libraryId: "/flutter/flutter", query: "your question" })
+query-docs({ libraryId: "/rrousselGit/river_pod", query: "your question" })
+```
+
+Key IDs: Flutter `/flutter/flutter` · Riverpod `/rrousselGit/river_pod` · Dio `/cfug/dio`
+
+### Shutdown (every session — non-negotiable)
+
+1. `vault_append("Changes/changelog.md", entry)` — **append**, never overwrite
+2. `vault_write("Sessions/YYYY-MM-DD-topic.md", content)` — session log
+3. New screens? Update `agents/ui-agent.md`
+4. New pattern or bug fix? `vault_append("Learnings/learning-log.md", ...)` or `vault_append("Errors/error-log.md", ...)`
+
+### Coding Reference
+
+- Patterns to follow: `vault/Patterns/code-patterns.md`
+- Best practices: `vault/Patterns/coding-guidelines.md`
+- What NOT to do: `vault/Patterns/anti-patterns.md`

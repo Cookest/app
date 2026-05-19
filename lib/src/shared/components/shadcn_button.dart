@@ -1,10 +1,19 @@
+/// Legacy shadcn-style button wrapper. Deprecated in favour of [CkButton]
+/// from `package:cookest_ui`. Does not respect dark-mode design tokens.
 import 'package:flutter/material.dart';
 
 
 import '../theme/shadcn_theme.dart';
 
+@Deprecated(
+  'Use CkButton from package:cookest_ui/cookest_ui.dart instead.',
+)
 enum ShadcnButtonVariant { defaultBtn, destructive, outline, secondary, ghost, link }
 
+@Deprecated(
+  'Use CkButton from package:cookest_ui/cookest_ui.dart instead. '
+  'This component does not respect the dark mode design tokens.',
+)
 class ShadcnButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;

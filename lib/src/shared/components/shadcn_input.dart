@@ -1,7 +1,12 @@
+/// Legacy shadcn-style input wrapper. Deprecated in favour of [CkInput]
+/// from `package:cookest_ui`.
 import 'package:flutter/material.dart';
 
 import '../theme/shadcn_theme.dart';
 
+@Deprecated(
+  'Use CkInput from package:cookest_ui/cookest_ui.dart instead.',
+)
 class ShadcnInput extends StatelessWidget {
   final TextEditingController? controller;
   final String? placeholder;

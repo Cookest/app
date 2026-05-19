@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
@@ -9,7 +10,6 @@ import 'package:cookest/src/core/theme/app_colors.dart';
 import '../repositories/inventory_repository.dart';
 import '../models/inventory_item.dart';
 import 'add_inventory_sheet.dart';
-import 'grocery_scan_screen.dart';
 
 class InventoryScreen extends ConsumerStatefulWidget {
   const InventoryScreen({super.key});
@@ -46,10 +46,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
 
   Future<void> _openScanScreen() async {
     setState(() => _fabOpen = false);
-    final added = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => const GroceryScanScreen()),
-    );
+    final added = await context.push<bool>('/grocery-scan');
     if (added == true) {
       ref.invalidate(inventoryListProvider);
       ref.invalidate(expiringCountProvider);

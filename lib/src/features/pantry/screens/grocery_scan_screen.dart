@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -87,7 +88,7 @@ class _GroceryScanScreenState extends ConsumerState<GroceryScanScreen> {
       ref.invalidate(inventoryListProvider);
       ref.invalidate(expiringCountProvider);
       ref.invalidate(recipeSuggestionsProvider);
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) context.pop(true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -107,7 +108,7 @@ class _GroceryScanScreenState extends ConsumerState<GroceryScanScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(LucideIcons.arrowLeft, color: context.appHeading),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         title: Text(
           'Scan Groceries',

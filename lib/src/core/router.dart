@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'config.dart';
 import '../features/recipes/screens/food_recipe_detail_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -22,23 +22,35 @@ import '../features/chat/screens/chat_screen.dart';
 import '../features/subscription/screens/paywall_screen.dart';
 import '../features/recipes/screens/recipe_detail_screen.dart';
 import '../features/recipes/screens/create_recipe_screen.dart';
+import '../features/pantry/screens/grocery_scan_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Provider that configures and exposes the app's [GoRouter].
+///
+/// Auth guard redirect logic:
+/// - Unauthenticated users on a protected route → `/login`.
+/// - Authenticated users on `/login` or `/register` → `/`.
+/// - `/splash` bypasses all guards.
+/// - Demo mode (`AppConfig.isDemoMode`) disables all guards for screenshot capture.
+///
+/// The router refreshes automatically whenever [authProvider] emits a new state.
 final routerProvider = Provider<GoRouter>((ref) {
-  final _isDemoMode = kIsWeb && Uri.base.queryParameters.containsKey('demo');
+  final isDemoMode = AppConfig.isDemoMode;
   final router = GoRouter(
-    initialLocation: _isDemoMode ? '/' : '/splash',
+    initialLocation: isDemoMode ? '/' : '/splash',
     navigatorKey: _rootNavigatorKey,
     redirect: (context, state) {
       final authState = ref.read(authProvider);
       final isAuthenticated = authState.isAuthenticated;
-      final isLoggingIn = state.matchedLocation == '/login' || state.matchedLocation == '/register';
+      final isLoggingIn =
+          state.matchedLocation == '/login' ||
+          state.matchedLocation == '/register';
       final isSplash = state.matchedLocation == '/splash';
 
       // Demo mode for screenshot capture — skip all auth guards
-      if (kIsWeb && Uri.base.queryParameters.containsKey('demo')) return null;
+      if (AppConfig.isDemoMode) return null;
 
       if (isSplash) return null;
       if (!isAuthenticated && !isLoggingIn) return '/login';
@@ -46,12 +58,28 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
-      GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingScreen()),
-      GoRoute(path: '/recipes/create', builder: (context, state) => const CreateRecipeScreen()),
-      GoRoute(path: '/recipes/:id', builder: (context, state) => RecipeDetailScreen(recipeId: state.pathParameters['id']!)),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/recipes/create',
+        builder: (context, state) => const CreateRecipeScreen(),
+      ),
+      GoRoute(
+        path: '/recipes/:id',
+        builder: (context, state) =>
+            RecipeDetailScreen(recipeId: state.pathParameters['id']!),
+      ),
       GoRoute(
         path: '/browse/recipes/:id',
         builder: (context, state) => FoodRecipeDetailScreen(
@@ -59,18 +87,44 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
-      GoRoute(path: '/paywall', builder: (context, state) => const PaywallScreen()),
-      GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
-      GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+      GoRoute(
+        path: '/paywall',
+        builder: (context, state) => const PaywallScreen(),
+      ),
+      GoRoute(
+        path: '/grocery-scan',
+        builder: (context, state) => const GroceryScanScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
-        builder: (context, state, child) => _AppShell(location: state.matchedLocation, child: child),
+        builder: (context, state, child) =>
+            _AppShell(location: state.matchedLocation, child: child),
         routes: [
           GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
-          GoRoute(path: '/meals', builder: (context, state) => const MealPlanScreen()),
-          GoRoute(path: '/recipes', builder: (context, state) => const RecipesScreen()),
-          GoRoute(path: '/pantry', builder: (context, state) => const InventoryScreen()),
-          GoRoute(path: '/groceries', builder: (context, state) => const ShoppingListScreen()),
+          GoRoute(
+            path: '/meals',
+            builder: (context, state) => const MealPlanScreen(),
+          ),
+          GoRoute(
+            path: '/recipes',
+            builder: (context, state) => const RecipesScreen(),
+          ),
+          GoRoute(
+            path: '/pantry',
+            builder: (context, state) => const InventoryScreen(),
+          ),
+          GoRoute(
+            path: '/groceries',
+            builder: (context, state) => const ShoppingListScreen(),
+          ),
         ],
       ),
     ],
@@ -107,8 +161,12 @@ class _AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? CookestTokens.colorSurfaceDark : CookestTokens.colorSurfaceLight;
-    final borderColor = isDark ? CookestTokens.colorBorderDark : CookestTokens.colorBorderLight;
+    final surfaceColor = isDark
+        ? CookestTokens.colorSurfaceDark
+        : CookestTokens.colorSurfaceLight;
+    final borderColor = isDark
+        ? CookestTokens.colorBorderDark
+        : CookestTokens.colorBorderLight;
 
     return Scaffold(
       body: child,
@@ -140,11 +198,11 @@ class _AppShell extends StatelessWidget {
                             tab.icon,
                             key: ValueKey(isActive),
                             size: 22,
-                             color: isActive
-                                 ? CookestTokens.colorPrimaryDEFAULT
-                                 : (isDark
-                                     ? CookestTokens.colorMutedDark
-                                     : CookestTokens.colorMutedLight),
+                            color: isActive
+                                ? CookestTokens.colorPrimaryDEFAULT
+                                : (isDark
+                                      ? CookestTokens.colorMutedDark
+                                      : CookestTokens.colorMutedLight),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -153,11 +211,11 @@ class _AppShell extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 10,
                             fontWeight: FontWeight.w400,
-                             color: isActive
-                                 ? CookestTokens.colorPrimaryDEFAULT
-                                 : (isDark
-                                     ? CookestTokens.colorMutedDark
-                                     : CookestTokens.colorMutedLight),
+                            color: isActive
+                                ? CookestTokens.colorPrimaryDEFAULT
+                                : (isDark
+                                      ? CookestTokens.colorMutedDark
+                                      : CookestTokens.colorMutedLight),
                           ),
                           child: Text(tab.label),
                         ),

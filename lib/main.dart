@@ -12,6 +12,11 @@ void main() {
   );
 }
 
+/// Root widget of the Cookest application.
+///
+/// Wraps [MaterialApp.router] with design-system themes from [CookestTheme]
+/// and delegates routing to [routerProvider]. Always rendered inside a
+/// [ProviderScope] so that all Riverpod providers are accessible.
 class CookestApp extends ConsumerWidget {
   const CookestApp({super.key});
 

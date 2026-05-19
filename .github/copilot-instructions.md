@@ -45,6 +45,15 @@ Do not guess package APIs. Training data is outdated. Use Context7 instead.
 3. If new screens were added: update `agents/ui-agent.md`
 4. If a pattern was discovered or a bug was fixed: `vault_append("Learnings/learning-log.md", ...)` or `vault_append("Errors/error-log.md", ...)`
 
+## If MCP Is Unavailable
+
+Read `../CONTEXT.md` (repo root) — it is a static snapshot of the full project, always up to date, requires no tools.
+
+## Mid-Session Re-Anchor
+
+If this conversation has grown long and you feel uncertain about project state, call `vault_read("Agents/context.md")` again immediately before your next action.
+
 ## Project Context
 
 @AGENTS.md
+@../CONTEXT.md

@@ -19,6 +19,12 @@ class AuthTokens {
       );
 }
 
+/// Canonical repository for authentication operations: login, register,
+/// logout, and session validation.
+///
+/// **Note:** `lib/src/features/auth/repositories/auth_repository.dart` (sibling
+/// path) is dead code kept for reference only. This file is the active
+/// implementation used by [authRepositoryProvider].
 class AuthRepository {
   final ApiClient _api;
   AuthRepository(this._api);

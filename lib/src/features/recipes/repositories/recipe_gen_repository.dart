@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_client.dart';
 import '../models/generated_recipe.dart';
 
+/// Data-access layer for the AI recipe generation endpoint.
+///
+/// Communicates directly with [Dio] (bypassing [ApiClient]) so it can apply
+/// a per-request receive timeout long enough for multi-step Ollama inference.
 class RecipeGenRepository {
   final Dio _dio;
 
@@ -35,34 +39,43 @@ class RecipeGenRepository {
   }
 }
 
+/// Provider that exposes [RecipeGenRepository]. Depends on [dioProvider].
 final recipeGenRepositoryProvider = Provider<RecipeGenRepository>((ref) {
   return RecipeGenRepository(ref.watch(dioProvider));
 });
 
 // ── State notifier ────────────────────────────────────────────────────────────
 
+/// Base sealed class for AI recipe generation states.
 sealed class RecipeGenState {
   const RecipeGenState();
 }
 
+/// Idle — no generation has been requested, or the last result was reset.
 class RecipeGenIdle extends RecipeGenState {
   const RecipeGenIdle();
 }
 
+/// A generation request is in flight. The UI should show a progress indicator.
 class RecipeGenLoading extends RecipeGenState {
   const RecipeGenLoading();
 }
 
+/// Generation completed successfully. [recipe] contains the AI-produced result.
 class RecipeGenSuccess extends RecipeGenState {
   final GeneratedRecipe recipe;
   const RecipeGenSuccess(this.recipe);
 }
 
+/// Generation failed. [message] is a user-facing error string.
 class RecipeGenError extends RecipeGenState {
   final String message;
   const RecipeGenError(this.message);
 }
 
+/// Orchestrates the AI recipe generation lifecycle: triggers the API call,
+/// maps outcomes to [RecipeGenState] variants, and exposes [reset] to return
+/// to idle after the user dismisses the result or error.
 class RecipeGenNotifier extends StateNotifier<RecipeGenState> {
   final RecipeGenRepository _repo;
 
@@ -93,6 +106,8 @@ class RecipeGenNotifier extends StateNotifier<RecipeGenState> {
   void reset() => state = const RecipeGenIdle();
 }
 
+/// Provider that exposes [RecipeGenNotifier] / [RecipeGenState].
+/// Depends on [recipeGenRepositoryProvider].
 final recipeGenProvider =
     StateNotifierProvider<RecipeGenNotifier, RecipeGenState>((ref) {
   return RecipeGenNotifier(ref.watch(recipeGenRepositoryProvider));
